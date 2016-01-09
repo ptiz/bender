@@ -78,10 +78,32 @@ class BenderTests: QuickSpec {
                     expect(false).to(equal(true), description: "\(err)")
                 }
             }
+            
+            it("should throw if expected field does not exist") {
+                
+                let jsonObject = jsonFromFile("basic_test")
+                
+                let personRule = StructRule({ Person() })
+                    .expect("nameS", TypeRule<String>()) { $0.name = $1 }
+                    .expect("age", TypeRule<Float>()) { $0.age = $1 }
+                
+                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("")))
+            }
+            
+            it("should throw if expected field is of wrong type") {
+                
+                let jsonObject = jsonFromFile("basic_test")
+                
+                let personRule = StructRule({ Person() })
+                    .expect("name", TypeRule<Float>()) { $0.age = $1 }
+                
+                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSON))
+            }
+            
         }
         
         describe("Array validation") {
-            it("should perform array validation field in struct") {
+            it("should perform array validation as field in struct") {
                 
                 let jsonObject = jsonFromFile("array_test")
                 
@@ -161,6 +183,23 @@ class BenderTests: QuickSpec {
                     expect(false).to(equal(true), description: "\(err)")
                 }
                 
+            }
+            
+            it("should throw if enum is not in set of values provided") {
+                let jsonObject = jsonFromFile("enum_test")
+                
+                let enumRule = StringEnumRule<IssuedBy>()
+                    .option("XMS", .FMS)
+                    .option("XMS", .SMS)
+                    .option("XPG", .OPG)
+                
+                let testRule = StructRule({ Pass() })
+                    .expect("issuedBy", enumRule, { $0.issuedBy = $1 })
+                
+                let testRules = ArrayRule()
+                    .item(testRule)
+                
+                expect{ try testRules.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("")))
             }
         }
     }
