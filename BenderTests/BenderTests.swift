@@ -83,11 +83,17 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("basic_test")
                 
-                let personRule = StructRule({ Person() })
-                    .expect("nameS", TypeRule<String>()) { $0.name = $1 }
-                    .expect("age", TypeRule<Float>()) { $0.age = $1 }
+                let passportRule = StructRule({ Passport() })
+                    .expect("issued", TypeRule<String>(), { $0.issuedBy = $1 })
+                    .optional("number", IntRule, { $0.number = $1 })
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("")))
+                let personRule = StructRule({ Person() })
+                    .expect("passport", passportRule, { $0.passport = $1 })
+                
+                expect{ try personRule.validate(jsonObject) }.to(throwError(errorType: ValidateError.self))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
+                        print(error.description)
+                    })
             }
             
             it("should throw if expected field is of wrong type") {
@@ -97,7 +103,7 @@ class BenderTests: QuickSpec {
                 let personRule = StructRule({ Person() })
                     .expect("name", TypeRule<Float>()) { $0.age = $1 }
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSON))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(errorType: ValidateError.self))
             }
             
         }
@@ -199,7 +205,7 @@ class BenderTests: QuickSpec {
                 let testRules = ArrayRule()
                     .item(testRule)
                 
-                expect{ try testRules.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("")))
+                expect{ try testRules.validate(jsonObject) }.to(throwError(errorType: ValidateError.self))
             }
         }
     }

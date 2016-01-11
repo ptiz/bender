@@ -9,9 +9,25 @@
 import Foundation
 import UIKit
 
-enum ValidateError: ErrorType {
-    case InvalidJSON
-    case InvalidJSONType(String)
+indirect enum ValidateError: ErrorType {
+    case InvalidJSONType(String, ValidateError?)
+    case ExpectedNotFound(String, ValidateError?)
+    
+    var description: String {
+        switch self {
+        case InvalidJSONType(let str, let cause):
+            return descr(cause, str)
+        case .ExpectedNotFound(let str, let cause):
+            return descr(cause, str)
+        }
+    }
+    
+    private func descr(cause: ValidateError?, _ msg: String) -> String {
+        if let causeDescr = cause?.description {
+            return msg + " " + causeDescr
+        }
+        return msg
+    }
 }
 
 protocol Rule {
@@ -24,7 +40,7 @@ class TypeRule<T>: Rule {
     
     func validate(jsonValue: AnyObject) throws -> T {
         guard let value = jsonValue as? T else {
-            throw ValidateError.InvalidJSON
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
         }
         return value
     }
@@ -60,21 +76,30 @@ class StructRule<T>: Rule {
     
     func validate(jsonValue: AnyObject) throws -> T {
         guard let json = jsonValue as? [String: AnyObject] else {
-            throw ValidateError.InvalidJSON
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
         }
         
         let newStruct = factory()
         
         for (name, rule) in mandatoryRules {
             guard let value = json[name] else {
-                throw ValidateError.InvalidJSONType("Mandatory \(name) is not found in \(json)")
+                throw ValidateError.ExpectedNotFound("Error validating \(jsonValue) as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
-            try rule(value, newStruct)
+            
+            do {
+                try rule(value, newStruct)
+            } catch let err as ValidateError {
+                throw ValidateError.InvalidJSONType("Error validating \(T.self).", err)
+            }
         }
         
         for (name, rule) in optionalRules {
             if let value = json[name] {
-                try rule(value, newStruct)
+                do {
+                    try rule(value, newStruct)
+                } catch let err as ValidateError {
+                    throw ValidateError.InvalidJSONType("Error validating \(T.self).", err)
+                }
             }
         }
         
@@ -98,14 +123,18 @@ class ArrayRule<T>: Rule {
     
     func validate(jsonValue: AnyObject) throws -> V {
         guard let json = jsonValue as? [AnyObject] else {
-            throw ValidateError.InvalidJSON
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected array of \(T.self).", nil)
         }
         
         var newArray = [T]()
         
         for object in json {
-            if let item = try itemRule?(object) {
-                newArray.append(item)
+            do {
+                if let item = try itemRule?(object) {
+                    newArray.append(item)
+                }
+            } catch let err as ValidateError {
+                throw ValidateError.InvalidJSONType("Error validating array of \(T.self).", err)
             }
         }
         
@@ -126,7 +155,7 @@ class EnumRule<T, S: Equatable>: Rule {
     
     func validate(jsonValue: AnyObject) throws -> V {
         guard let json = jsonValue as? SourceType else {
-            throw ValidateError.InvalidJSON
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(SourceType.self).", nil)
         }
         
         for (value, enumValue) in cases {
@@ -135,10 +164,9 @@ class EnumRule<T, S: Equatable>: Rule {
             }
         }
         
-        throw ValidateError.InvalidJSONType("Unknown enum value: \(json)")
+        throw ValidateError.ExpectedNotFound("Error validating \(T.self). Invalid enum case found: \"\(json)\".", nil)
     }
 }
 
 class StringEnumRule<T>: EnumRule<T, String> {
-    
 }
