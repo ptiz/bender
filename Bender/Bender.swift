@@ -24,7 +24,7 @@ indirect enum ValidateError: ErrorType {
     
     private func descr(cause: ValidateError?, _ msg: String) -> String {
         if let causeDescr = cause?.description {
-            return msg + " " + causeDescr
+            return "\(msg)\n\(causeDescr)"
         }
         return msg
     }
@@ -83,13 +83,13 @@ class StructRule<T>: Rule {
         
         for (name, rule) in mandatoryRules {
             guard let value = json[name] else {
-                throw ValidateError.ExpectedNotFound("Error validating \(jsonValue) as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
+                throw ValidateError.ExpectedNotFound("Error validating \"\(jsonValue)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
             
             do {
                 try rule(value, newStruct)
             } catch let err as ValidateError {
-                throw ValidateError.InvalidJSONType("Error validating \(T.self).", err)
+                throw ValidateError.InvalidJSONType("Error validating mandatory field \"\(name)\" for \(T.self).", err)
             }
         }
         
@@ -98,7 +98,7 @@ class StructRule<T>: Rule {
                 do {
                     try rule(value, newStruct)
                 } catch let err as ValidateError {
-                    throw ValidateError.InvalidJSONType("Error validating \(T.self).", err)
+                throw ValidateError.InvalidJSONType("Error validating optional field \"\(name)\" for \(T.self).", err)
                 }
             }
         }
@@ -128,13 +128,15 @@ class ArrayRule<T>: Rule {
         
         var newArray = [T]()
         
+        var counter = 0
         for object in json {
+            counter += 1
             do {
                 if let item = try itemRule?(object) {
                     newArray.append(item)
                 }
             } catch let err as ValidateError {
-                throw ValidateError.InvalidJSONType("Error validating array of \(T.self).", err)
+                throw ValidateError.InvalidJSONType("Error validating array of \(T.self): item #\(counter) could not be validated.", err)
             }
         }
         

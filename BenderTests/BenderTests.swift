@@ -69,10 +69,13 @@ class BenderTests: QuickSpec {
                     let person = try personRule.validate(jsonObject)
                     
                     expect(person).toNot(beNil())
+                    
                     expect(person.age).to(equal(37.5))
+                    
                     expect(person.passport).toNot(beNil())
-                    expect(person.oldPass).to(beNil())
                     expect(person.passport.number).to(equal(123))
+                    
+                    expect(person.oldPass).to(beNil())
                     
                 } catch let err {
                     expect(false).to(equal(true), description: "\(err)")
@@ -89,10 +92,10 @@ class BenderTests: QuickSpec {
                 
                 let personRule = StructRule({ Person() })
                     .expect("passport", passportRule, { $0.passport = $1 })
-                
-                expect{ try personRule.validate(jsonObject) }.to(throwError(errorType: ValidateError.self))
+
+                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                        print(error.description)
+                        expect(error.description).to(equal("Error validating mandatory field \"passport\" for Person.\nError validating \"{\n    issuedBy = FMS;\n    number = 123;\n}\" as Passport. Mandatory field \"issued\" not found in struct."))
                     })
             }
             
@@ -103,7 +106,10 @@ class BenderTests: QuickSpec {
                 let personRule = StructRule({ Person() })
                     .expect("name", TypeRule<Float>()) { $0.age = $1 }
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(errorType: ValidateError.self))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
+                        expect(error.description).to(equal("Error validating mandatory field \"name\" for Person.\nValue of unexpected type found: \"John\". Expected Float."))
+                    })
             }
             
         }
@@ -154,6 +160,28 @@ class BenderTests: QuickSpec {
                     expect(false).to(equal(true), description: "\(err)")
                 }
             }
+            
+            it("should throw if an item struct is of wrong type") {
+                
+                let jsonObject = jsonFromFile("array_test")
+                
+                let passportRule = StructRule({ Passport() })
+                    .optional("issuedBy", TypeRule<String>(), { $0.issuedBy = $1 })
+                    .expect("numberX", IntRule, { $0.number = $1 })
+                
+                let passportArrayRule = ArrayRule()
+                    .item(passportRule)
+                
+                let passportsRule = StructRule({ Passports() })
+                    .expect("passports", passportArrayRule, { $0.items = $1 })
+                    .expect("numbers", ArrayRule().item(IntRule), { $0.numbers = $1 })
+                
+                expect{ try passportsRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
+                expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
+                        expect(error.description).to(equal("Error validating mandatory field \"passports\" for Passports.\nError validating array of Passport: item #1 could not be validated.\nError validating \"{\n    issuedBy = FMS1;\n    number = 111;\n}\" as Passport. Mandatory field \"numberX\" not found in struct."))
+                    })
+            }
+            
         }
         
         describe("Enum validtion") {
@@ -205,7 +233,11 @@ class BenderTests: QuickSpec {
                 let testRules = ArrayRule()
                     .item(testRule)
                 
-                expect{ try testRules.validate(jsonObject) }.to(throwError(errorType: ValidateError.self))
+                expect{ try testRules.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
+                expect{ try testRules.validate(jsonObject) }.to(throwError { (error: ValidateError) in
+                    expect(error.description).to(equal("Error validating array of Pass: item #1 could not be validated.\nError validating mandatory field \"issuedBy\" for Pass.\nError validating IssuedBy. Invalid enum case found: \"FMS\"."))
+                    })
+
             }
         }
     }
