@@ -12,6 +12,7 @@ import UIKit
 indirect enum ValidateError: ErrorType {
     case InvalidJSONType(String, ValidateError?)
     case ExpectedNotFound(String, ValidateError?)
+    case JSONSerialization(String, NSError)
     
     var description: String {
         switch self {
@@ -19,6 +20,8 @@ indirect enum ValidateError: ErrorType {
             return descr(cause, str)
         case .ExpectedNotFound(let str, let cause):
             return descr(cause, str)
+        case .JSONSerialization(let str, let err):
+            return descr(err, str)
         }
     }
     
@@ -27,6 +30,11 @@ indirect enum ValidateError: ErrorType {
             return "\(msg)\n\(causeDescr)"
         }
         return msg
+    }
+    
+    private func descr(cause: NSError, _ msg: String) -> String {
+        let errorDescription = "\n\((cause.userInfo["NSDebugDescription"] ?? cause.description)!)"
+        return "\(msg)\(errorDescription)"
     }
 }
 
@@ -185,4 +193,27 @@ class EnumRule<T, S: Equatable>: Rule {
 }
 
 class StringEnumRule<T>: EnumRule<T, String> {
+}
+
+class StringifiedJSONRule<R: Rule>: Rule {
+    typealias V = R.V
+    
+    let nestedRule: R
+    
+    init(nestedRule: R) {
+        self.nestedRule = nestedRule
+    }
+    
+    func validate(jsonValue: AnyObject) throws -> V {
+        guard let jsonString = jsonValue as? String, let data = jsonString.dataUsingEncoding(NSUTF8StringEncoding) else {
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
+        }
+        
+        do {
+            let json = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            return try nestedRule.validate(json)
+        } catch let error as NSError {
+            throw ValidateError.JSONSerialization("Unable to parse stringified JSON: \(jsonString).", error)
+        }
+    }
 }
