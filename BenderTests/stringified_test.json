@@ -1,0 +1,6 @@
+{
+    "name": "John",
+    "age": 37.5,
+    "passport": "{\"number\": 123, \"issuedBy\": \"FMS\", \"valid\": true}",
+    "passports": "[{\"number\": 123, \"issuedBy\": \"FMS\", \"valid\": true}, {\"issuedBy\": \"SMS\", \"valid\": false}]"
+}

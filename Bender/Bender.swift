@@ -12,6 +12,7 @@ import UIKit
 indirect enum ValidateError: ErrorType {
     case InvalidJSONType(String, ValidateError?)
     case ExpectedNotFound(String, ValidateError?)
+    case JSONSerialization(String, NSError)
     
     var description: String {
         switch self {
@@ -19,6 +20,8 @@ indirect enum ValidateError: ErrorType {
             return descr(cause, str)
         case .ExpectedNotFound(let str, let cause):
             return descr(cause, str)
+        case .JSONSerialization(let str, let err):
+            return descr(err, str)
         }
     }
     
@@ -27,6 +30,11 @@ indirect enum ValidateError: ErrorType {
             return "\(msg)\n\(causeDescr)"
         }
         return msg
+    }
+    
+    private func descr(cause: NSError, _ msg: String) -> String {
+        let errorDescription = "\n\((cause.userInfo["NSDebugDescription"] ?? cause.description)!)"
+        return "\(msg)\(errorDescription)"
     }
 }
 
@@ -47,6 +55,11 @@ class TypeRule<T>: Rule {
 }
 
 let IntRule = TypeRule<Int>()
+let UIntRule = TypeRule<UInt>()
+let DoubleRule = TypeRule<Double>()
+let FloatRule = TypeRule<Float>()
+let BoolRule = TypeRule<Bool>()
+let StringRule = TypeRule<String>()
 
 class StructRule<T>: Rule {
     typealias V = T
@@ -59,18 +72,14 @@ class StructRule<T>: Rule {
     init(_ factory: ()->T) {
         self.factory = factory
     }
-        
-    func expect<R: Rule>(name: String, _ rule: R, _ bind: (T, R.V)->Void) -> Self {
-        mandatoryRules[name] = { (json, struc) in
-            bind(struc, try rule.validate(json))
-        }
+    
+    func expect<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
+        mandatoryRules[name] = storeRule(name, rule, bind)
         return self
     }
     
-    func optional<R: Rule>(name: String, _ rule: R, _ bind: (T, R.V)->Void) -> Self {
-        optionalRules[name] = { (json, struc) in
-            bind(struc, try rule.validate(json))
-        }
+    func optional<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
+        optionalRules[name] = storeRule(name, rule, bind)
         return self
     }
     
@@ -81,9 +90,28 @@ class StructRule<T>: Rule {
         
         let newStruct = factory()
         
+        try validateMandatoryRules(json, withNewStruct: newStruct)
+        try validateOptionalRules(json, withNewStruct: newStruct)
+        
+        return newStruct
+    }
+    
+    //MARK: - implementation
+    
+    private func storeRule<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> RuleClosure {
+        return { (json, struc) in
+            if let b = bind {
+                b(struc, try rule.validate(json))
+            } else {
+                try rule.validate(json)
+            }
+        }
+    }
+    
+    private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: T) throws {
         for (name, rule) in mandatoryRules {
             guard let value = json[name] else {
-                throw ValidateError.ExpectedNotFound("Error validating \"\(jsonValue)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
+                throw ValidateError.ExpectedNotFound("Error validating \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
             
             do {
@@ -92,33 +120,29 @@ class StructRule<T>: Rule {
                 throw ValidateError.InvalidJSONType("Error validating mandatory field \"\(name)\" for \(T.self).", err)
             }
         }
-        
+    }
+    
+    private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: T) throws {
         for (name, rule) in optionalRules {
             if let value = json[name] {
                 do {
                     try rule(value, newStruct)
                 } catch let err as ValidateError {
-                throw ValidateError.InvalidJSONType("Error validating optional field \"\(name)\" for \(T.self).", err)
+                    throw ValidateError.InvalidJSONType("Error validating optional field \"\(name)\" for \(T.self).", err)
                 }
             }
         }
-        
-        return newStruct
     }
-    
 }
 
-class ArrayRule<T>: Rule {
+class ArrayRule<T, R: Rule where R.V == T>: Rule {
     typealias V = [T]
     typealias ValidateClosure = (AnyObject) throws -> T
     
-    private var itemRule: ValidateClosure?
+    private var itemRule: R
     
-    func item<R: Rule where R.V == T>(rule: R) -> Self {
-        itemRule = { json in
-            try rule.validate(json)
-        }
-        return self
+    init(itemRule: R) {
+        self.itemRule = itemRule
     }
     
     func validate(jsonValue: AnyObject) throws -> V {
@@ -132,9 +156,7 @@ class ArrayRule<T>: Rule {
         for object in json {
             counter += 1
             do {
-                if let item = try itemRule?(object) {
-                    newArray.append(item)
-                }
+                newArray.append(try itemRule.validate(object))
             } catch let err as ValidateError {
                 throw ValidateError.InvalidJSONType("Error validating array of \(T.self): item #\(counter) could not be validated.", err)
             }
@@ -171,4 +193,27 @@ class EnumRule<T, S: Equatable>: Rule {
 }
 
 class StringEnumRule<T>: EnumRule<T, String> {
+}
+
+class StringifiedJSONRule<R: Rule>: Rule {
+    typealias V = R.V
+    
+    let nestedRule: R
+    
+    init(nestedRule: R) {
+        self.nestedRule = nestedRule
+    }
+    
+    func validate(jsonValue: AnyObject) throws -> V {
+        guard let jsonString = jsonValue as? String, let data = jsonString.dataUsingEncoding(NSUTF8StringEncoding) else {
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
+        }
+        
+        do {
+            let json = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            return try nestedRule.validate(json)
+        } catch let error as NSError {
+            throw ValidateError.JSONSerialization("Unable to parse stringified JSON: \(jsonString).", error)
+        }
+    }
 }

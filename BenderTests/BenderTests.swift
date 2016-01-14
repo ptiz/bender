@@ -15,6 +15,7 @@ import Nimble
 class Passport {
     var number: Int?
     var issuedBy: String! = nil
+    var valid: Bool = true
 }
 
 class Person {
@@ -22,6 +23,7 @@ class Person {
     var age: Float! = nil
     var passport: Passport! = nil
     var oldPass: Passport?
+    var nested: [Passport] = []
 }
 
 class Passports {
@@ -46,6 +48,12 @@ class Pass {
     var active: Active = .Inactive
 }
 
+class Folder {
+    var name: String = ""
+    var size: Int64 = 0
+    var folders: [Folder] = []
+}
+
 class BenderTests: QuickSpec {
  
     override func spec() {
@@ -56,12 +64,13 @@ class BenderTests: QuickSpec {
                 let jsonObject = jsonFromFile("basic_test")
                 
                 let passportRule = StructRule({ Passport() })
-                    .expect("issuedBy", TypeRule<String>(), { $0.issuedBy = $1 })
+                    .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
                     .optional("number", IntRule, { $0.number = $1 })
+                    .expect("valid", BoolRule, { $0.valid = $1 })
                 
                 let personRule = StructRule({ Person() })
-                    .expect("name", TypeRule<String>()) { $0.name = $1 }
-                    .expect("age", TypeRule<Float>()) { $0.age = $1 }
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .expect("age", FloatRule) { $0.age = $1 }
                     .expect("passport", passportRule, { $0.passport = $1 })
                     .optional("oldPass", passportRule, { $0.oldPass = $1 })
 
@@ -74,6 +83,7 @@ class BenderTests: QuickSpec {
                     
                     expect(person.passport).toNot(beNil())
                     expect(person.passport.number).to(equal(123))
+                    expect(person.passport.valid).to(equal(true))
                     
                     expect(person.oldPass).to(beNil())
                     
@@ -82,20 +92,45 @@ class BenderTests: QuickSpec {
                 }
             }
             
+            it("should handle recurisively nested structs") {
+                
+                let jsonObject = jsonFromFile("recursive_test")
+                
+                let folderRule = StructRule<Folder>({ Folder() })
+                    .expect("name", StringRule) { $0.name = $1 }
+                
+                folderRule
+                    .optional("folders", ArrayRule(itemRule: folderRule)) { $0.folders = $1 }
+                
+                do {
+                    let folder = try folderRule.validate(jsonObject)
+                    
+                    expect(folder).toNot(beNil())
+                    expect(folder.folders.count).to(equal(2))
+                    expect(folder.folders[1].name).to(equal("nested 2"))
+                    expect(folder.folders[1].folders.count).to(equal(1))
+                    expect(folder.folders[1].folders[0].name).to(equal("nested 21"))
+                    
+                } catch let err {
+                    expect(false).to(equal(true), description: "\(err)")
+                }
+                
+            }
+            
             it("should throw if expected field does not exist") {
                 
                 let jsonObject = jsonFromFile("basic_test")
                 
                 let passportRule = StructRule({ Passport() })
-                    .expect("issued", TypeRule<String>(), { $0.issuedBy = $1 })
-                    .optional("number", IntRule, { $0.number = $1 })
+                    .expect("issued", StringRule) { $0.issuedBy = $1 }
+                    .optional("number", IntRule) { $0.number = $1 }
                 
                 let personRule = StructRule({ Person() })
-                    .expect("passport", passportRule, { $0.passport = $1 })
+                    .expect("passport", passportRule) { $0.passport = $1 }
 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                        expect(error.description).to(equal("Error validating mandatory field \"passport\" for Person.\nError validating \"{\n    issuedBy = FMS;\n    number = 123;\n}\" as Passport. Mandatory field \"issued\" not found in struct."))
+                        expect(error.description).to(equal("Error validating mandatory field \"passport\" for Person.\nError validating \"[\"valid\": 1, \"issuedBy\": FMS, \"number\": 123]\" as Passport. Mandatory field \"issued\" not found in struct."))
                     })
             }
             
@@ -104,7 +139,7 @@ class BenderTests: QuickSpec {
                 let jsonObject = jsonFromFile("basic_test")
                 
                 let personRule = StructRule({ Person() })
-                    .expect("name", TypeRule<Float>()) { $0.age = $1 }
+                    .expect("name", FloatRule) { $0.age = $1 }
                 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
@@ -120,15 +155,14 @@ class BenderTests: QuickSpec {
                 let jsonObject = jsonFromFile("array_test")
                 
                 let passportRule = StructRule({ Passport() })
-                    .optional("issuedBy", TypeRule<String>(), { $0.issuedBy = $1 })
+                    .optional("issuedBy", StringRule, { $0.issuedBy = $1 })
                     .expect("number", IntRule, { $0.number = $1 })
                 
-                let passportArrayRule = ArrayRule()
-                    .item(passportRule)
+                let passportArrayRule = ArrayRule(itemRule: passportRule)
                 
                 let passportsRule = StructRule({ Passports() })
                     .expect("passports", passportArrayRule, { $0.items = $1 })
-                    .expect("numbers", ArrayRule().item(IntRule), { $0.numbers = $1 })
+                    .expect("numbers", ArrayRule(itemRule: IntRule), { $0.numbers = $1 })
                 
                 do {
                     let passports = try passportsRule.validate(jsonObject)
@@ -148,7 +182,7 @@ class BenderTests: QuickSpec {
             it("should perform array validation as root object") {
                 
                 let jsonObject = jsonFromFile("natural_array_test")
-                let arrayRule = ArrayRule().item(IntRule)
+                let arrayRule = ArrayRule(itemRule: IntRule)
                 
                 do {
                     let numbers = try arrayRule.validate(jsonObject)
@@ -166,19 +200,18 @@ class BenderTests: QuickSpec {
                 let jsonObject = jsonFromFile("array_test")
                 
                 let passportRule = StructRule({ Passport() })
-                    .optional("issuedBy", TypeRule<String>(), { $0.issuedBy = $1 })
-                    .expect("numberX", IntRule, { $0.number = $1 })
+                    .optional("issuedBy", StringRule) { $0.issuedBy = $1 }
+                    .expect("numberX", IntRule) { $0.number = $1 }
                 
-                let passportArrayRule = ArrayRule()
-                    .item(passportRule)
+                let passportArrayRule = ArrayRule(itemRule: passportRule)
                 
                 let passportsRule = StructRule({ Passports() })
                     .expect("passports", passportArrayRule, { $0.items = $1 })
-                    .expect("numbers", ArrayRule().item(IntRule), { $0.numbers = $1 })
+                    .expect("numbers", ArrayRule(itemRule: IntRule), { $0.numbers = $1 })
                 
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                        expect(error.description).to(equal("Error validating mandatory field \"passports\" for Passports.\nError validating array of Passport: item #1 could not be validated.\nError validating \"{\n    issuedBy = FMS1;\n    number = 111;\n}\" as Passport. Mandatory field \"numberX\" not found in struct."))
+                        expect(error.description).to(equal("Error validating mandatory field \"passports\" for Passports.\nError validating array of Passport: item #1 could not be validated.\nError validating \"[\"issuedBy\": FMS1, \"number\": 111]\" as Passport. Mandatory field \"numberX\" not found in struct."))
                     })
             }
             
@@ -199,11 +232,10 @@ class BenderTests: QuickSpec {
                     .option(1, .Active)
                 
                 let testRule = StructRule({ Pass() })
-                    .expect("issuedBy", enumRule, { $0.issuedBy = $1 })
-                    .expect("active", intEnumRule, { $0.active = $1 })
+                    .expect("issuedBy", enumRule) { $0.issuedBy = $1 }
+                    .expect("active", intEnumRule) { $0.active = $1 }
                 
-                let testRules = ArrayRule()
-                    .item(testRule)
+                let testRules = ArrayRule(itemRule: testRule)
                 
                 do {
                     let tests = try testRules.validate(jsonObject)
@@ -228,14 +260,61 @@ class BenderTests: QuickSpec {
                     .option("XPG", .OPG)
                 
                 let testRule = StructRule({ Pass() })
-                    .expect("issuedBy", enumRule, { $0.issuedBy = $1 })
+                    .expect("issuedBy", enumRule) { $0.issuedBy = $1 }
                 
-                let testRules = ArrayRule()
-                    .item(testRule)
+                let testRules = ArrayRule(itemRule: testRule)
                 
                 expect{ try testRules.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
                 expect{ try testRules.validate(jsonObject) }.to(throwError { (error: ValidateError) in
                     expect(error.description).to(equal("Error validating array of Pass: item #1 could not be validated.\nError validating mandatory field \"issuedBy\" for Pass.\nError validating IssuedBy. Invalid enum case found: \"FMS\"."))
+                    })
+
+            }
+        }
+        
+        describe("Stringified JSON validation") {
+            it("should perform validation in accordance with the nested rule") {
+                
+                let jsonObject = jsonFromFile("stringified_test")
+                
+                let passportRule = StructRule({ Passport() })
+                    .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
+                    .optional("number", IntRule, { $0.number = $1 })
+                    .expect("valid", BoolRule, { $0.valid = $1 })
+                
+                let personRule = StructRule({ Person() })
+                    .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 })
+                    .optional("passports", StringifiedJSONRule(nestedRule: ArrayRule(itemRule: passportRule))) { $0.nested = $1 }
+                
+                do {
+                    let person = try personRule.validate(jsonObject)
+                    
+                    expect(person).toNot(beNil())
+                    
+                    expect(person.passport).toNot(beNil())
+                    expect(person.passport.number).to(equal(123))
+                    expect(person.passport.valid).to(equal(true))
+                    
+                    expect(person.nested.count).to(equal(2))
+                    
+                } catch let err {
+                    expect(false).to(equal(true), description: "\(err)")
+                }
+            }
+            
+            it("should throw on parse error: comma absent after the 'number' field definition") {
+                
+                let jsonObject = jsonFromFile("stringified_negative_test")
+                
+                let passportRule = StructRule({ Passport() })
+                    .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
+                
+                let personRule = StructRule({ Person() })
+                    .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 })
+                
+                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
+                    expect(error.description).to(equal("Error validating mandatory field \"passport\" for Person.\nUnable to parse stringified JSON: {\"number\": 123 \"issuedBy\": \"FMS\", \"valid\": true}.\nBadly formed object around character 15."))
                     })
 
             }
