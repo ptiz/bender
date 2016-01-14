@@ -47,6 +47,11 @@ class TypeRule<T>: Rule {
 }
 
 let IntRule = TypeRule<Int>()
+let UIntRule = TypeRule<UInt>()
+let DoubleRule = TypeRule<Double>()
+let FloatRule = TypeRule<Float>()
+let BoolRule = TypeRule<Bool>()
+let StringRule = TypeRule<String>()
 
 class StructRule<T>: Rule {
     typealias V = T
@@ -59,18 +64,14 @@ class StructRule<T>: Rule {
     init(_ factory: ()->T) {
         self.factory = factory
     }
-        
-    func expect<R: Rule>(name: String, _ rule: R, _ bind: (T, R.V)->Void) -> Self {
-        mandatoryRules[name] = { (json, struc) in
-            bind(struc, try rule.validate(json))
-        }
+    
+    func expect<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
+        mandatoryRules[name] = storeRule(name, rule, bind)
         return self
     }
     
-    func optional<R: Rule>(name: String, _ rule: R, _ bind: (T, R.V)->Void) -> Self {
-        optionalRules[name] = { (json, struc) in
-            bind(struc, try rule.validate(json))
-        }
+    func optional<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
+        optionalRules[name] = storeRule(name, rule, bind)
         return self
     }
     
@@ -81,9 +82,28 @@ class StructRule<T>: Rule {
         
         let newStruct = factory()
         
+        try validateMandatoryRules(json, withNewStruct: newStruct)
+        try validateOptionalRules(json, withNewStruct: newStruct)
+        
+        return newStruct
+    }
+    
+    //MARK: - implementation
+    
+    private func storeRule<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> RuleClosure {
+        return { (json, struc) in
+            if let b = bind {
+                b(struc, try rule.validate(json))
+            } else {
+                try rule.validate(json)
+            }
+        }
+    }
+    
+    private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: T) throws {
         for (name, rule) in mandatoryRules {
             guard let value = json[name] else {
-                throw ValidateError.ExpectedNotFound("Error validating \"\(jsonValue)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
+                throw ValidateError.ExpectedNotFound("Error validating \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
             
             do {
@@ -92,20 +112,19 @@ class StructRule<T>: Rule {
                 throw ValidateError.InvalidJSONType("Error validating mandatory field \"\(name)\" for \(T.self).", err)
             }
         }
-        
+    }
+    
+    private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: T) throws {
         for (name, rule) in optionalRules {
             if let value = json[name] {
                 do {
                     try rule(value, newStruct)
                 } catch let err as ValidateError {
-                throw ValidateError.InvalidJSONType("Error validating optional field \"\(name)\" for \(T.self).", err)
+                    throw ValidateError.InvalidJSONType("Error validating optional field \"\(name)\" for \(T.self).", err)
                 }
             }
         }
-        
-        return newStruct
     }
-    
 }
 
 class ArrayRule<T>: Rule {

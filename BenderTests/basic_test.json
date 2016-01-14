@@ -3,6 +3,7 @@
     "age": 37.5,
     "passport": {
         "number": 123,
-        "issuedBy": "FMS"
+        "issuedBy": "FMS",
+        "valid": true
     }
 }
