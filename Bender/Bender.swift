@@ -43,6 +43,53 @@ protocol Rule {
     func validate(jsonValue: AnyObject) throws -> V
 }
 
+internal class NumberRule<T>: Rule {
+    typealias V = T
+    
+    func validate(jsonValue: AnyObject) throws -> T {
+        guard let number = jsonValue as? NSNumber else {
+            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
+        }
+        return try validateNumber(number)
+    }
+    
+    func validateNumber(number: NSNumber) throws -> T {
+        throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
+    }
+}
+
+class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
+    let i: T = 0
+    override func validateNumber(number: NSNumber) throws -> T {
+        switch i {
+        case is Int: return number.integerValue as! T
+        case is Int8: return number.charValue as! T
+        case is Int16: return number.shortValue as! T
+        case is Int32: return number.intValue as! T
+        case is Int64: return number.longLongValue as! T
+        case is UInt: return number.unsignedIntegerValue as! T
+        case is UInt8: return number.unsignedCharValue as! T
+        case is UInt16: return number.unsignedShortValue as! T
+        case is UInt32: return number.unsignedIntValue as! T
+        case is UInt64: return number.unsignedLongLongValue as! T
+            
+        default: throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
+        }
+    }
+}
+
+class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
+    let f: T = 0.0
+    override func validateNumber(number: NSNumber) throws -> T {
+        switch f {
+        case is Float: return number.floatValue as! T
+        case is Double: return number.doubleValue as! T
+            
+        default: throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
+        }
+    }
+}
+
 class TypeRule<T>: Rule {
     typealias V = T
     
@@ -54,10 +101,11 @@ class TypeRule<T>: Rule {
     }
 }
 
-let IntRule = TypeRule<Int>()
-let UIntRule = TypeRule<UInt>()
-let DoubleRule = TypeRule<Double>()
-let FloatRule = TypeRule<Float>()
+let IntRule = IntegerRule<Int>()
+let Int64Rule = IntegerRule<Int64>()
+let UIntRule = IntegerRule<UInt>()
+let DoubleRule = FloatingRule<Double>()
+let FloatRule = FloatingRule<Float>()
 let BoolRule = TypeRule<Bool>()
 let StringRule = TypeRule<String>()
 
@@ -69,7 +117,7 @@ class StructRule<T>: Rule {
     private var optionalRules = [String: RuleClosure]()
     private let factory: ()->T
     
-    init(_ factory: ()->T) {
+    init(@autoclosure(escaping) _ factory: ()->T) {
         self.factory = factory
     }
     

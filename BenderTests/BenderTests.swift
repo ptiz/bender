@@ -63,12 +63,12 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("basic_test")
                 
-                let passportRule = StructRule({ Passport() })
+                let passportRule = StructRule(Passport())
                     .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
                     .optional("number", IntRule, { $0.number = $1 })
                     .expect("valid", BoolRule, { $0.valid = $1 })
                 
-                let personRule = StructRule({ Person() })
+                let personRule = StructRule(Person())
                     .expect("name", StringRule) { $0.name = $1 }
                     .expect("age", FloatRule) { $0.age = $1 }
                     .expect("passport", passportRule, { $0.passport = $1 })
@@ -96,8 +96,9 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("recursive_test")
                 
-                let folderRule = StructRule<Folder>({ Folder() })
+                let folderRule = StructRule(Folder())
                     .expect("name", StringRule) { $0.name = $1 }
+                    .expect("size", Int64Rule) { $0.size = $1 }
                 
                 folderRule
                     .optional("folders", ArrayRule(itemRule: folderRule)) { $0.folders = $1 }
@@ -121,11 +122,11 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("basic_test")
                 
-                let passportRule = StructRule({ Passport() })
+                let passportRule = StructRule(Passport())
                     .expect("issued", StringRule) { $0.issuedBy = $1 }
                     .optional("number", IntRule) { $0.number = $1 }
                 
-                let personRule = StructRule({ Person() })
+                let personRule = StructRule(Person())
                     .expect("passport", passportRule) { $0.passport = $1 }
 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
@@ -138,7 +139,7 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("basic_test")
                 
-                let personRule = StructRule({ Person() })
+                let personRule = StructRule(Person())
                     .expect("name", FloatRule) { $0.age = $1 }
                 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
@@ -154,13 +155,13 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("array_test")
                 
-                let passportRule = StructRule({ Passport() })
+                let passportRule = StructRule(Passport())
                     .optional("issuedBy", StringRule, { $0.issuedBy = $1 })
                     .expect("number", IntRule, { $0.number = $1 })
                 
                 let passportArrayRule = ArrayRule(itemRule: passportRule)
                 
-                let passportsRule = StructRule({ Passports() })
+                let passportsRule = StructRule(Passports())
                     .expect("passports", passportArrayRule, { $0.items = $1 })
                     .expect("numbers", ArrayRule(itemRule: IntRule), { $0.numbers = $1 })
                 
@@ -199,13 +200,13 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("array_test")
                 
-                let passportRule = StructRule({ Passport() })
+                let passportRule = StructRule(Passport())
                     .optional("issuedBy", StringRule) { $0.issuedBy = $1 }
                     .expect("numberX", IntRule) { $0.number = $1 }
                 
                 let passportArrayRule = ArrayRule(itemRule: passportRule)
                 
-                let passportsRule = StructRule({ Passports() })
+                let passportsRule = StructRule(Passports())
                     .expect("passports", passportArrayRule, { $0.items = $1 })
                     .expect("numbers", ArrayRule(itemRule: IntRule), { $0.numbers = $1 })
                 
@@ -231,7 +232,7 @@ class BenderTests: QuickSpec {
                     .option(0, .Inactive)
                     .option(1, .Active)
                 
-                let testRule = StructRule({ Pass() })
+                let testRule = StructRule(Pass())
                     .expect("issuedBy", enumRule) { $0.issuedBy = $1 }
                     .expect("active", intEnumRule) { $0.active = $1 }
                 
@@ -259,7 +260,7 @@ class BenderTests: QuickSpec {
                     .option("XMS", .SMS)
                     .option("XPG", .OPG)
                 
-                let testRule = StructRule({ Pass() })
+                let testRule = StructRule(Pass())
                     .expect("issuedBy", enumRule) { $0.issuedBy = $1 }
                 
                 let testRules = ArrayRule(itemRule: testRule)
@@ -277,12 +278,12 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("stringified_test")
                 
-                let passportRule = StructRule({ Passport() })
+                let passportRule = StructRule(Passport())
                     .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
                     .optional("number", IntRule, { $0.number = $1 })
                     .expect("valid", BoolRule, { $0.valid = $1 })
                 
-                let personRule = StructRule({ Person() })
+                let personRule = StructRule(Person())
                     .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 })
                     .optional("passports", StringifiedJSONRule(nestedRule: ArrayRule(itemRule: passportRule))) { $0.nested = $1 }
                 
@@ -306,10 +307,10 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("stringified_negative_test")
                 
-                let passportRule = StructRule({ Passport() })
+                let passportRule = StructRule(Passport())
                     .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
                 
-                let personRule = StructRule({ Person() })
+                let personRule = StructRule(Person())
                     .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 })
                 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
