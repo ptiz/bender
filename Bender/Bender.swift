@@ -127,17 +127,14 @@ class StructRule<T>: Rule {
     }
 }
 
-class ArrayRule<T>: Rule {
+class ArrayRule<T, R: Rule where R.V == T>: Rule {
     typealias V = [T]
     typealias ValidateClosure = (AnyObject) throws -> T
     
-    private var itemRule: ValidateClosure?
+    private var itemRule: R
     
-    func item<R: Rule where R.V == T>(rule: R) -> Self {
-        itemRule = { json in
-            try rule.validate(json)
-        }
-        return self
+    init(itemRule: R) {
+        self.itemRule = itemRule
     }
     
     func validate(jsonValue: AnyObject) throws -> V {
@@ -151,9 +148,7 @@ class ArrayRule<T>: Rule {
         for object in json {
             counter += 1
             do {
-                if let item = try itemRule?(object) {
-                    newArray.append(item)
-                }
+                newArray.append(try itemRule.validate(object))
             } catch let err as ValidateError {
                 throw ValidateError.InvalidJSONType("Error validating array of \(T.self): item #\(counter) could not be validated.", err)
             }
