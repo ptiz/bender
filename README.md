@@ -1,4 +1,6 @@
 # Bender
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]()
+
 Yet another JSON validating and binding framework for Swift. WIP.
 
 This is a tool to firstly check incoming JSON and in the last turn to bind it to arbitrary app model class.
