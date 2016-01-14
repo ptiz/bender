@@ -1,0 +1,20 @@
+{
+	"name": "root folder",
+	"size": 32000,
+	"folders": [
+		{
+			"name": "nested 1",
+			"size": 64000
+		},
+		{
+			"name": "nested 2",
+			"size": 128000,
+			"folders": [
+				{
+					"name": "nested 21",
+					"size": 16000
+				}
+			]
+		}
+	]    
+}
