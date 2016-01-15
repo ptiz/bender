@@ -243,12 +243,13 @@ class BenderTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("enum_test")
                 
-                let enumRule = StringEnumRule<IssuedBy>()
+                let enumRule = EnumRule<IssuedBy>()
                     .option("FMS", .FMS)
                     .option("SMS", .SMS)
                     .option("OPG", .OPG)
+                    .option(0, .Unknown)                
                 
-                let intEnumRule = EnumRule<Active, Int>()
+                let intEnumRule = EnumRule<Active>()
                     .option(0, .Inactive)
                     .option(1, .Active)
                 
@@ -261,7 +262,7 @@ class BenderTests: QuickSpec {
                 do {
                     let tests = try testRules.validate(jsonObject)
                     
-                    expect(tests.count).to(equal(3))
+                    expect(tests.count).to(equal(4))
                     
                     expect(tests[1].active).to(equal(Active.Inactive))
                     expect(tests[1].issuedBy).to(equal(IssuedBy.SMS))
@@ -275,10 +276,11 @@ class BenderTests: QuickSpec {
             it("should throw if enum is not in set of values provided") {
                 let jsonObject = jsonFromFile("enum_test")
                 
-                let enumRule = StringEnumRule<IssuedBy>()
+                let enumRule = EnumRule<IssuedBy>()
                     .option("XMS", .FMS)
                     .option("XMS", .SMS)
                     .option("XPG", .OPG)
+                    .option(0, .Unknown)
                 
                 let testRule = StructRule(Pass())
                     .expect("issuedBy", enumRule) { $0.issuedBy = $1 }
@@ -287,7 +289,7 @@ class BenderTests: QuickSpec {
                 
                 expect{ try testRules.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
                 expect{ try testRules.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                    expect(error.description).to(equal("Error validating array of Pass: item #1 could not be validated.\nError validating mandatory field \"issuedBy\" for Pass.\nError validating IssuedBy. Invalid enum case found: \"FMS\"."))
+                    expect(error.description).to(equal("Error validating array of Pass: item #1 could not be validated.\nError validating mandatory field \"issuedBy\" for Pass.\nError validating enum IssuedBy. Invalid enum case found: \"FMS\"."))
                     })
 
             }

@@ -234,33 +234,52 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
     }
 }
 
-class EnumRule<T, S: Equatable>: Rule {
+/**
+ Validator for enum of type T. Checks that JSON value to be validated is equal to any option stored and .
+ If all stored properties do not match, throws ValidateError.
+*/
+class EnumRule<T>: Rule {
     typealias V = T
-    typealias SourceType = S
     
-    var cases: [(SourceType, T)] = []
+    var cases: [(AnyObject) throws ->T?] = []
     
-    func option(value: SourceType, _ enumValue: T) -> Self {
-        cases.append((value, enumValue))
+    /**
+     Method for declaring matching between given value and enum case of type T. 
+     JSON value should be comparable with the value, i.e. should cast to S which is Equatable.
+     
+     - parameter value:     constant of type S which is corresponding to enumValue
+     - parameter enumValue: enum value of type T
+     
+     - returns: self for options declaration chaining
+     */
+    func option<S: Equatable>(value: S, _ enumValue: T) -> Self {
+        cases.append({ jsonValue in
+            guard let json = jsonValue as? S where json == value else {
+                return nil
+            }
+            return enumValue
+        })
         return self
     }
     
+    /**
+     Compares all stored option constants with given JSON value. If one of them matches, returns corresponding enum case. Throws otherwise.
+     
+     - parameter jsonValue: JSON value that can be compared with the stored value of type S
+     
+     - throws: throws ValidateError
+     
+     - returns: returns enum case of type T if matching value found, throws otherwise
+     */
     func validate(jsonValue: AnyObject) throws -> V {
-        guard let json = jsonValue as? SourceType else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(SourceType.self).", nil)
-        }
-        
-        for (value, enumValue) in cases {
-            if json == value {
-                return enumValue
+        for theCase in cases {
+            if let value = try theCase(jsonValue) {
+                return value
             }
         }
         
-        throw ValidateError.ExpectedNotFound("Error validating \(T.self). Invalid enum case found: \"\(json)\".", nil)
+        throw ValidateError.ExpectedNotFound("Error validating enum \(T.self). Invalid enum case found: \"\(jsonValue)\".", nil)
     }
-}
-
-class StringEnumRule<T>: EnumRule<T, String> {
 }
 
 class StringifiedJSONRule<R: Rule>: Rule {
