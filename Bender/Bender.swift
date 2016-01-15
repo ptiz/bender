@@ -29,6 +29,13 @@
 import Foundation
 import UIKit
 
+/**
+ Bender throwing error type
+ 
+ - InvalidJSONType:   basic bender error, contains string and optional ValidateError cause
+ - ExpectedNotFound:  throws if expected was not found, contains string and optional ValidateError cause
+ - JSONSerialization: throws if JSON parser fails, contains string and optional ValidateError cause
+ */
 indirect enum ValidateError: ErrorType {
     case InvalidJSONType(String, ValidateError?)
     case ExpectedNotFound(String, ValidateError?)
@@ -58,11 +65,17 @@ indirect enum ValidateError: ErrorType {
     }
 }
 
+/**
+ Base generic bender protocol for validator rule.
+ */
 protocol Rule {
     typealias V
     func validate(jsonValue: AnyObject) throws -> V
 }
 
+/**
+ Base class for numeric validators
+*/
 internal class NumberRule<T>: Rule {
     typealias V = T
     
@@ -78,6 +91,9 @@ internal class NumberRule<T>: Rule {
     }
 }
 
+/**
+ Validator for signed and unsigned integer numerics
+*/
 class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
     let i: T = 0
     override func validateNumber(number: NSNumber) throws -> T {
@@ -98,6 +114,9 @@ class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
     }
 }
 
+/**
+ Vaidator for floating point numerics
+*/
 class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
     let f: T = 0.0
     override func validateNumber(number: NSNumber) throws -> T {
@@ -110,6 +129,9 @@ class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
     }
 }
 
+/**
+ Validator for any generic type that can be cast from NSValue automatically
+*/
 class TypeRule<T>: Rule {
     typealias V = T
     
@@ -121,6 +143,7 @@ class TypeRule<T>: Rule {
     }
 }
 
+/// Set of predefined rules for integral types
 let IntRule = IntegerRule<Int>()
 let Int64Rule = IntegerRule<Int64>()
 let UIntRule = IntegerRule<UInt>()
@@ -129,6 +152,9 @@ let FloatRule = FloatingRule<Float>()
 let BoolRule = TypeRule<Bool>()
 let StringRule = TypeRule<String>()
 
+/**
+ Validator for class types. Validates JSON struct for particular type T.
+*/
 class StructRule<T>: Rule {
     typealias V = T
     typealias RuleClosure = (AnyObject, T) throws -> Void
@@ -137,20 +163,54 @@ class StructRule<T>: Rule {
     private var optionalRules = [String: RuleClosure]()
     private let factory: ()->T
     
+    /**
+     Validator initializer
+     
+     - parameter factory: autoclosure for allocating object of generic parameter type
+     */
     init(@autoclosure(escaping) _ factory: ()->T) {
         self.factory = factory
     }
-    
+
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives object of generic parameter type as a first argument and validated field value as a second one
+     
+     - returns: returns self for field declaration chaining
+     */
     func expect<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
         mandatoryRules[name] = storeRule(name, rule, bind)
         return self
     }
     
+    /**
+     Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
+     nothing happens.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives object of generic parameter type as a first argument and validated field value as a second one
+     
+     - returns: returns self for field declaration chaining
+     */
     func optional<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
         optionalRules[name] = storeRule(name, rule, bind)
         return self
     }
     
+    /**
+     Validates JSON dictionary and returns T value if succeeded. Validation throws if jsonValue is not a JSON dictionary or if any nested rule throws.
+     
+     - parameter jsonValue: JSON dictionary to be validated and converted into T
+     
+     - throws: throws ValidateError
+     
+     - returns: object of generic parameter argument if validation was successful
+     */
     func validate(jsonValue: AnyObject) throws -> T {
         guard let json = jsonValue as? [String: AnyObject] else {
             throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
@@ -203,16 +263,33 @@ class StructRule<T>: Rule {
     }
 }
 
+/**
+ Validator for arrays of items of type T, that should be validated by rule of type R.
+*/
 class ArrayRule<T, R: Rule where R.V == T>: Rule {
     typealias V = [T]
     typealias ValidateClosure = (AnyObject) throws -> T
     
     private var itemRule: R
     
+    /**
+     Validator initializer
+     
+     - parameter itemRule: rule for validating array items
+     */
     init(itemRule: R) {
         self.itemRule = itemRule
     }
     
+    /**
+     Validates JSON array and returns [T] if succeeded. Validation throws if jsonValue is not a JSON array or if item rule throws for any item.
+     
+     - parameter jsonValue: JSON array to be validated and converted into [T]
+     
+     - throws: throws ValidateError
+     
+     - returns: array of objects of first generic parameter argument if validation was successful
+     */
     func validate(jsonValue: AnyObject) throws -> V {
         guard let json = jsonValue as? [AnyObject] else {
             throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected array of \(T.self).", nil)
@@ -234,44 +311,80 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
     }
 }
 
-class EnumRule<T, S: Equatable>: Rule {
+/**
+ Validator for enum of type T. Checks that JSON value to be validated is equal to any option stored and .
+ If all stored properties do not match, throws ValidateError.
+*/
+class EnumRule<T>: Rule {
     typealias V = T
-    typealias SourceType = S
     
-    var cases: [(SourceType, T)] = []
+    var cases: [(AnyObject) throws ->T?] = []
     
-    func option(value: SourceType, _ enumValue: T) -> Self {
-        cases.append((value, enumValue))
+    /**
+     Method for declaring matching between given value and enum case of type T. 
+     JSON value should be comparable with the value, i.e. should cast to S which is Equatable.
+     
+     - parameter value:     constant of type S which is corresponding to enumValue
+     - parameter enumValue: enum value of type T
+     
+     - returns: self for options declaration chaining
+     */
+    func option<S: Equatable>(value: S, _ enumValue: T) -> Self {
+        cases.append({ jsonValue in
+            guard let json = jsonValue as? S where json == value else {
+                return nil
+            }
+            return enumValue
+        })
         return self
     }
     
+    /**
+     Compares all stored option constants with given JSON value. If one of them matches, returns corresponding enum case. Throws otherwise.
+     
+     - parameter jsonValue: JSON value that can be compared with the stored value of type S
+     
+     - throws: throws ValidateError
+     
+     - returns: returns enum case of type T if matching value found, throws otherwise
+     */
     func validate(jsonValue: AnyObject) throws -> V {
-        guard let json = jsonValue as? SourceType else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(SourceType.self).", nil)
-        }
-        
-        for (value, enumValue) in cases {
-            if json == value {
-                return enumValue
+        for theCase in cases {
+            if let value = try theCase(jsonValue) {
+                return value
             }
         }
         
-        throw ValidateError.ExpectedNotFound("Error validating \(T.self). Invalid enum case found: \"\(json)\".", nil)
+        throw ValidateError.ExpectedNotFound("Error validating enum \(T.self). Invalid enum case found: \"\(jsonValue)\".", nil)
     }
 }
 
-class StringEnumRule<T>: EnumRule<T, String> {
-}
-
+/**
+ Validator of JSON encoded into string like this: "\"field": \"value\"". Encoded JSON should be validated by given rule of type R.
+*/
 class StringifiedJSONRule<R: Rule>: Rule {
     typealias V = R.V
     
     let nestedRule: R
     
+    /**
+     Validator initializer
+     
+     - parameter nestedRule: rule to validate JSON decoded from string
+     */
     init(nestedRule: R) {
         self.nestedRule = nestedRule
     }
     
+    /**
+     Checks if string contains JSON. Calls nested rule validator if succeeded. Throws ValidateError otherwise.
+     
+     - parameter jsonValue: string containing encoded JSON
+     
+     - throws: throws ValidateError
+     
+     - returns: returns object of nested rule struct type (i.e. R.V), if validated. Throws otherwise.
+     */
     func validate(jsonValue: AnyObject) throws -> V {
         guard let jsonString = jsonValue as? String, let data = jsonString.dataUsingEncoding(NSUTF8StringEncoding) else {
             throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
