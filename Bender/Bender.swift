@@ -153,22 +153,23 @@ let BoolRule = TypeRule<Bool>()
 let StringRule = TypeRule<String>()
 
 /**
- Validator for class types. Validates JSON struct for particular type T.
+ Validator for compound types: classes or structs. Validates JSON struct for particular type T,
+ which is passed by value of type RefT.
 */
-class StructRule<T>: Rule {
+class CompoundRule<T, RefT>: Rule {
     typealias V = T
-    typealias RuleClosure = (AnyObject, T) throws -> Void
+    typealias RuleClosure = (AnyObject, RefT) throws -> Void
     
     private var mandatoryRules = [String: RuleClosure]()
     private var optionalRules = [String: RuleClosure]()
-    private let factory: ()->T
+    private let factory: ()->RefT
     
     /**
      Validator initializer
      
-     - parameter factory: autoclosure for allocating object of generic parameter type
+     - parameter factory: autoclosure for allocating object, which returns reference to object of generic type T
      */
-    init(@autoclosure(escaping) _ factory: ()->T) {
+    init(@autoclosure(escaping) _ factory: ()->RefT) {
         self.factory = factory
     }
 
@@ -178,11 +179,11 @@ class StructRule<T>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
-     - parameter bind: optional bind closure, that receives object of generic parameter type as a first argument and validated field value as a second one
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      
      - returns: returns self for field declaration chaining
      */
-    func expect<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
+    func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> Self {
         mandatoryRules[name] = storeRule(name, rule, bind)
         return self
     }
@@ -193,11 +194,11 @@ class StructRule<T>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
-     - parameter bind: optional bind closure, that receives object of generic parameter type as a first argument and validated field value as a second one
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      
      - returns: returns self for field declaration chaining
      */
-    func optional<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> Self {
+    func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> Self {
         optionalRules[name] = storeRule(name, rule, bind)
         return self
     }
@@ -221,12 +222,23 @@ class StructRule<T>: Rule {
         try validateMandatoryRules(json, withNewStruct: newStruct)
         try validateOptionalRules(json, withNewStruct: newStruct)
         
-        return newStruct
+        return value(newStruct)
+    }
+    
+    /**
+     Functions that unboxes reference to generic parameter and returns object of type T
+     
+     - parameter newStruct: reference to generic parameter T
+     
+     - returns: object of generic parameter T
+     */
+    func value(newStruct: RefT) -> T {
+        return newStruct as! T
     }
     
     //MARK: - implementation
     
-    private func storeRule<R: Rule>(name: String, _ rule: R, _ bind: ((T, R.V)->Void)? = nil) -> RuleClosure {
+    private func storeRule<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
         return { (json, struc) in
             if let b = bind {
                 b(struc, try rule.validate(json))
@@ -236,7 +248,7 @@ class StructRule<T>: Rule {
         }
     }
     
-    private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: T) throws {
+    private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
         for (name, rule) in mandatoryRules {
             guard let value = json[name] else {
                 throw ValidateError.ExpectedNotFound("Error validating \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
@@ -250,7 +262,7 @@ class StructRule<T>: Rule {
         }
     }
     
-    private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: T) throws {
+    private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
         for (name, rule) in optionalRules {
             if let value = json[name] {
                 do {
@@ -260,6 +272,34 @@ class StructRule<T>: Rule {
                 }
             }
         }
+    }
+}
+
+/**
+ Validator of compound JSON object with binding to reference type like class T. Reference type is T itself.
+*/
+class ClassRule<T>: CompoundRule<T, T> {
+    
+    override init(@autoclosure(escaping) _ factory: ()->T) {
+        super.init(factory)
+    }
+    
+    override func value(newStruct: T) -> T {
+        return newStruct
+    }
+}
+
+/**
+ Validator of compound JSON object with binding to value type like struct T. Reference type is ref<T>.
+*/
+class StructRule<T>: CompoundRule<T, ref<T>> {
+
+    override init(@autoclosure(escaping) _ factory: ()->ref<T>) {
+        super.init(factory)
+    }
+    
+    override func value(newStruct: ref<T>) -> T {
+        return newStruct.value
     }
 }
 
@@ -396,5 +436,16 @@ class StringifiedJSONRule<R: Rule>: Rule {
         } catch let error as NSError {
             throw ValidateError.JSONSerialization("Unable to parse stringified JSON: \(jsonString).", error)
         }
+    }
+}
+
+/**
+ Generic class for boxing value type.
+*/
+class ref<T> {
+    var value: T
+    
+    init(_ value: T) {
+        self.value = value
     }
 }
