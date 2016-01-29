@@ -74,7 +74,7 @@ struct Folder {
     var folders: [Folder]?
 }
 
-class BenderTests: QuickSpec {
+class BenderInTests: QuickSpec {
  
     override func spec() {
         
@@ -346,6 +346,6 @@ class BenderTests: QuickSpec {
 }
 
 func jsonFromFile(name: String) -> AnyObject {
-    let data = NSData(contentsOfFile: NSBundle(forClass: BenderTests.self).pathForResource(name, ofType: "json")!)!
+    let data = NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)!
     return try! NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
 }
