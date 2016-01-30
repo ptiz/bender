@@ -82,6 +82,28 @@ class BenderOutTests: QuickSpec {
                 expect(newF.size).to(equal(10))
                 expect(newF.folders!.count).to(equal(2))
             }
+            
+            it("should allow only dump structs") {
+                let folderRule = StructRule(ref(Folder(name: "", size: 0, folders: nil)))
+                    .expect("name", StringRule) { $0.name }
+                    .expect("size", Int64Rule) { $0.size }
+                
+                folderRule
+                    .optional("folders", ArrayRule(itemRule: folderRule)) { $0.folders }
+                
+                let f = Folder(name: "Folder 1", size: 10, folders: [
+                    Folder(name: "Folder 21", size: 11, folders: nil),
+                    Folder(name: "Folder 22", size: 12, folders: nil)
+                    ])
+                
+                let d = try! folderRule.dump(f) as! [String: AnyObject]
+                let name = d["name"] as! String
+                
+                expect(name).to(equal("Folder 1"))
+                
+                let folders = d["folders"] as! [AnyObject]
+                expect(folders.count).to(equal(2))
+            }
         }
         
         describe("Array dump") {

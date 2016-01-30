@@ -221,7 +221,7 @@ class CompoundRule<T, RefT>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
-     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     - parameter bind: bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      
      - returns: returns self for field declaration chaining
      */
@@ -230,7 +230,7 @@ class CompoundRule<T, RefT>: Rule {
         return self
     }
     
-    func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
+    func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
         mandatoryRules[name] = storeRule(name, rule, bind)
         mandatoryDumpRules[name] = { struc in
             return try rule.dump(dump(struc))
@@ -253,7 +253,7 @@ class CompoundRule<T, RefT>: Rule {
         return self
     }
     
-    func optional<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+    func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
         optionalRules[name] = storeRule(name, rule, bind)
         optionalDumpRules[name] = { struc in
             if let v = dump(struc) {
