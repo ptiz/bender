@@ -74,8 +74,8 @@ struct Folder {
     var folders: [Folder]?
 }
 
-class BenderTests: QuickSpec {
- 
+class BenderInTests: QuickSpec {
+    
     override func spec() {
         
         describe("Basic struct validation") {
@@ -149,9 +149,9 @@ class BenderTests: QuickSpec {
                 let personRule = ClassRule(Person())
                     .expect("passport", passportRule) { $0.passport = $1 }
 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
-                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                        expect(error.description).to(equal("Error validating mandatory field \"passport\" for Person.\nError validating \"[\"valid\": 1, \"issuedBy\": FMS, \"number\": 123]\" as Passport. Mandatory field \"issued\" not found in struct."))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
+                        expect(error.description).to(equal("Unable to validate mandatory field \"passport\" for Person.\nUnable to validate \"[\"valid\": 1, \"issuedBy\": FMS, \"number\": 123]\" as Passport. Mandatory field \"issued\" not found in struct."))
                     })
             }
             
@@ -162,9 +162,9 @@ class BenderTests: QuickSpec {
                 let personRule = ClassRule(Person())
                     .expect("name", FloatRule) { $0.age = $1 }
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
-                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                        expect(error.description).to(equal("Error validating mandatory field \"name\" for Person.\nValue of unexpected type found: \"John\". Expected Float."))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
+                        expect(error.description).to(equal("Unable to validate mandatory field \"name\" for Person.\nValue of unexpected type found: \"John\". Expected Float."))
                     })
             }
             
@@ -230,9 +230,9 @@ class BenderTests: QuickSpec {
                     .expect("passports", passportArrayRule, { $0.items = $1 })
                     .expect("numbers", ArrayRule(itemRule: IntRule), { $0.numbers = $1 })
                 
-                expect{ try passportsRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
-                expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                        expect(error.description).to(equal("Error validating mandatory field \"passports\" for Passports.\nError validating array of Passport: item #1 could not be validated.\nError validating \"[\"issuedBy\": FMS1, \"number\": 111]\" as Passport. Mandatory field \"numberX\" not found in struct."))
+                expect{ try passportsRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
+                        expect(error.description).to(equal("Unable to validate mandatory field \"passports\" for Passports.\nUnable to validate array of Passport: item #0 could not be validated.\nUnable to validate \"[\"issuedBy\": FMS1, \"number\": 111]\" as Passport. Mandatory field \"numberX\" not found in struct."))
                     })
             }
             
@@ -287,9 +287,9 @@ class BenderTests: QuickSpec {
                 
                 let testRules = ArrayRule(itemRule: testRule)
                 
-                expect{ try testRules.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
-                expect{ try testRules.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                    expect(error.description).to(equal("Error validating array of Pass: item #1 could not be validated.\nError validating mandatory field \"issuedBy\" for Pass.\nError validating enum IssuedBy. Invalid enum case found: \"FMS\"."))
+                expect{ try testRules.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try testRules.validate(jsonObject) }.to(throwError { (error: RuleError) in
+                    expect(error.description).to(equal("Unable to validate array of Pass: item #0 could not be validated.\nUnable to validate mandatory field \"issuedBy\" for Pass.\nUnable to validate enum IssuedBy. Unexpected enum case found: \"FMS\"."))
                     })
 
             }
@@ -335,9 +335,9 @@ class BenderTests: QuickSpec {
                 let personRule = ClassRule(Person())
                     .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 })
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(ValidateError.InvalidJSONType("", nil)))
-                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: ValidateError) in
-                    expect(error.description).to(equal("Error validating mandatory field \"passport\" for Person.\nUnable to parse stringified JSON: {\"number\": 123 \"issuedBy\": \"FMS\", \"valid\": true}.\nBadly formed object around character 15."))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
+                    expect(error.description).to(equal("Unable to validate mandatory field \"passport\" for Person.\nUnable to parse stringified JSON: {\"number\": 123 \"issuedBy\": \"FMS\", \"valid\": true}.\nBadly formed object around character 15."))
                     })
 
             }
@@ -346,6 +346,6 @@ class BenderTests: QuickSpec {
 }
 
 func jsonFromFile(name: String) -> AnyObject {
-    let data = NSData(contentsOfFile: NSBundle(forClass: BenderTests.self).pathForResource(name, ofType: "json")!)!
+    let data = NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)!
     return try! NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
 }
