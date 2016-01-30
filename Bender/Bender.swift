@@ -36,10 +36,11 @@ import UIKit
  - ExpectedNotFound:  throws if expected was not found, contains string and optional ValidateError cause
  - JSONSerialization: throws if JSON parser fails, contains string and optional ValidateError cause
  */
-indirect enum ValidateError: ErrorType {
-    case InvalidJSONType(String, ValidateError?)
-    case ExpectedNotFound(String, ValidateError?)
-    case JSONSerialization(String, NSError)
+indirect enum RuleError: ErrorType {
+    case InvalidJSONType(String, RuleError?)
+    case ExpectedNotFound(String, RuleError?)
+    case InvalidJSONSerialization(String, NSError)
+    case InvalidDump(String, RuleError?)
     
     var description: String {
         switch self {
@@ -47,20 +48,25 @@ indirect enum ValidateError: ErrorType {
             return descr(cause, str)
         case .ExpectedNotFound(let str, let cause):
             return descr(cause, str)
-        case .JSONSerialization(let str, let err):
+        case .InvalidJSONSerialization(let str, let err):
             return descr(err, str)
+        case .InvalidDump(let str, let cause):
+            return descr(cause, str)
         }
     }
     
-    private func descr(cause: ValidateError?, _ msg: String) -> String {
+    private func descr(cause: RuleError?, _ msg: String) -> String {
         if let causeDescr = cause?.description {
             return "\(msg)\n\(causeDescr)"
         }
         return msg
     }
     
-    private func descr(cause: NSError, _ msg: String) -> String {
-        let errorDescription = "\n\((cause.userInfo["NSDebugDescription"] ?? cause.description)!)"
+    private func descr(cause: NSError?, _ msg: String) -> String {
+        guard let error = cause else {
+            return msg
+        }
+        let errorDescription = "\n\((error.userInfo["NSDebugDescription"] ?? error.description)!)"
         return "\(msg)\(errorDescription)"
     }
 }
@@ -71,7 +77,7 @@ indirect enum ValidateError: ErrorType {
 protocol Rule {
     typealias V
     func validate(jsonValue: AnyObject) throws -> V
-    func dump(value: V) -> AnyObject
+    func dump(value: V) throws -> AnyObject
 }
 
 /**
@@ -82,17 +88,17 @@ internal class NumberRule<T>: Rule {
     
     func validate(jsonValue: AnyObject) throws -> T {
         guard let number = jsonValue as? NSNumber else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
         }
         return try validateNumber(number)
     }
     
-    func dump(value: T) -> AnyObject {
-        return toAny(value)
+    func dump(value: T) throws -> AnyObject {
+        return try toAny(value)
     }
     
     func validateNumber(number: NSNumber) throws -> T {
-        throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
+        throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
     }
 }
 
@@ -114,7 +120,7 @@ class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
         case is UInt32: return number.unsignedIntValue as! T
         case is UInt64: return number.unsignedLongLongValue as! T
             
-        default: throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
+        default: throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
         }
     }
 }
@@ -129,12 +135,12 @@ class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
         case is Float: return number.floatValue as! T
         case is Double: return number.doubleValue as! T
             
-        default: throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
+        default: throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
         }
     }
 }
 
-func toAny<T>(t: T) -> AnyObject {
+func toAny<T>(t: T) throws -> AnyObject {
     switch t {
     case let v as Int: return NSNumber(integer: v)
     case let v as Int8: return NSNumber(char: v)
@@ -150,7 +156,8 @@ func toAny<T>(t: T) -> AnyObject {
     case let v as Float: return NSNumber(float: v)
     case let v as Double: return NSNumber(double: v)
     case let v as String: return v
-    default: return NSNull()
+    default:
+        throw RuleError.InvalidDump("Unable to dump value of unknown type: \(t)", nil)
     }
 }
 
@@ -162,13 +169,13 @@ class TypeRule<T>: Rule {
     
     func validate(jsonValue: AnyObject) throws -> T {
         guard let value = jsonValue as? T else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
         }
         return value
     }
     
-    func dump(value: V) -> AnyObject {
-        return toAny(value)
+    func dump(value: V) throws -> AnyObject {
+        return try toAny(value)
     }
 }
 
@@ -188,8 +195,8 @@ let StringRule = TypeRule<String>()
 class CompoundRule<T, RefT>: Rule {
     typealias V = T
     typealias RuleClosure = (AnyObject, RefT) throws -> Void
-    typealias DumpRuleClosure = (T) -> AnyObject
-    typealias DumpOptionalRuleClosure = (T) -> AnyObject?
+    typealias DumpRuleClosure = (T) throws -> AnyObject
+    typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
     
     private var mandatoryRules = [String: RuleClosure]()
     private var optionalRules = [String: RuleClosure]()
@@ -226,7 +233,7 @@ class CompoundRule<T, RefT>: Rule {
     func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
         mandatoryRules[name] = storeRule(name, rule, bind)
         mandatoryDumpRules[name] = { struc in
-            return rule.dump(dump(struc))
+            return try rule.dump(dump(struc))
         }
         return self
     }
@@ -250,7 +257,7 @@ class CompoundRule<T, RefT>: Rule {
         optionalRules[name] = storeRule(name, rule, bind)
         optionalDumpRules[name] = { struc in
             if let v = dump(struc) {
-                return rule.dump(v)
+                return try rule.dump(v)
             }
             return nil
         }
@@ -268,7 +275,7 @@ class CompoundRule<T, RefT>: Rule {
      */
     func validate(jsonValue: AnyObject) throws -> T {
         guard let json = jsonValue as? [String: AnyObject] else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
         }
         
         let newStruct = factory()
@@ -279,16 +286,12 @@ class CompoundRule<T, RefT>: Rule {
         return value(newStruct)
     }
     
-    func dump(value: T) -> AnyObject {
+    func dump(value: T) throws -> AnyObject {
         var dictionary = [String: AnyObject]()
-        for (name, rule) in mandatoryDumpRules {
-            dictionary[name] = rule(value)
-        }
-        for (name, rule) in optionalDumpRules {
-            if let v = rule(value) {
-                dictionary[name] = v
-            }
-        }
+        
+        try dumpMandatoryRules(value, dictionary: &dictionary)
+        try dumpOptionalRules(value, dictionary: &dictionary)
+
         return dictionary
     }
     
@@ -318,13 +321,13 @@ class CompoundRule<T, RefT>: Rule {
     private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
         for (name, rule) in mandatoryRules {
             guard let value = json[name] else {
-                throw ValidateError.ExpectedNotFound("Error validating \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
+                throw RuleError.ExpectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
             
             do {
                 try rule(value, newStruct)
-            } catch let err as ValidateError {
-                throw ValidateError.InvalidJSONType("Error validating mandatory field \"\(name)\" for \(T.self).", err)
+            } catch let err as RuleError {
+                throw RuleError.InvalidJSONType("Unable to validate mandatory field \"\(name)\" for \(T.self).", err)
             }
         }
     }
@@ -334,9 +337,31 @@ class CompoundRule<T, RefT>: Rule {
             if let value = json[name] {
                 do {
                     try rule(value, newStruct)
-                } catch let err as ValidateError {
-                    throw ValidateError.InvalidJSONType("Error validating optional field \"\(name)\" for \(T.self).", err)
+                } catch let err as RuleError {
+                    throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
                 }
+            }
+        }
+    }
+    
+    private func dumpMandatoryRules(value: T, inout dictionary: [String: AnyObject]) throws {
+        for (name, rule) in mandatoryDumpRules {
+            do {
+                dictionary[name] = try rule(value)
+            } catch let err as RuleError {
+                throw RuleError.InvalidDump("Unable to dump mandatory field \(name) for \(T.self).", err)
+            }
+        }
+    }
+    
+    private func dumpOptionalRules(value: T, inout dictionary: [String: AnyObject]) throws {
+        for (name, rule) in optionalDumpRules {
+            do {
+                if let v = try rule(value) {
+                    dictionary[name] = v
+                }
+            } catch let err as RuleError {
+                throw RuleError.InvalidDump("Unable to dump optional field \(name) for \(T.self).", err)
             }
         }
     }
@@ -399,28 +424,30 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
      */
     func validate(jsonValue: AnyObject) throws -> V {
         guard let json = jsonValue as? [AnyObject] else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected array of \(T.self).", nil)
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected array of \(T.self).", nil)
         }
         
         var newArray = [T]()
         
-        var counter = 0
-        for object in json {
-            counter += 1
+        for (index, object) in json.enumerate() {
             do {
                 newArray.append(try itemRule.validate(object))
-            } catch let err as ValidateError {
-                throw ValidateError.InvalidJSONType("Error validating array of \(T.self): item #\(counter) could not be validated.", err)
+            } catch let err as RuleError {
+                throw RuleError.InvalidJSONType("Unable to validate array of \(T.self): item #\(index) could not be validated.", err)
             }
         }
         
         return newArray
     }
     
-    func dump(value: V) -> AnyObject {
+    func dump(value: V) throws -> AnyObject {
         var array = [AnyObject]()
-        for t in value {
-            array.append(itemRule.dump(t))
+        for (index, t) in value.enumerate() {
+            do {
+                array.append(try itemRule.dump(t))
+            } catch let err as RuleError {
+                throw RuleError.InvalidDump("Unable to dump array of \(T.self): item #\(index) could not be dumped.", err)
+            }
         }
         return array
     }
@@ -433,8 +460,8 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
 class EnumRule<T: Equatable>: Rule {
     typealias V = T
     
-    var cases: [(AnyObject) throws ->T?] = []
-    var reverseCases: [(T)->AnyObject?] = []
+    var cases: [(AnyObject) throws -> T?] = []
+    var reverseCases: [(T) throws -> AnyObject?] = []
     
     /**
      Method for declaring matching between given value and enum case of type T. 
@@ -455,7 +482,7 @@ class EnumRule<T: Equatable>: Rule {
         
         reverseCases.append({ ev in
             if enumValue == ev  {
-                return toAny(value)
+                return try toAny(value)
             }
             return nil
         })
@@ -478,16 +505,21 @@ class EnumRule<T: Equatable>: Rule {
             }
         }
         
-        throw ValidateError.ExpectedNotFound("Error validating enum \(T.self). Invalid enum case found: \"\(jsonValue)\".", nil)
+        throw RuleError.ExpectedNotFound("Unable to validate enum \(T.self). Unexpected enum case found: \"\(jsonValue)\".", nil)
     }
     
-    func dump(value: V) -> AnyObject {
+    func dump(value: V) throws -> AnyObject {
         for theCase in reverseCases {
-            if let v = theCase(value) {
-                return v
+            do {
+                if let v = try theCase(value) {
+                    return v
+                }
+            } catch let err as RuleError {
+                throw RuleError.InvalidDump("Unable to dump enum \(T.self).", err)
             }
         }
-        return NSNull()
+        
+        throw RuleError.ExpectedNotFound("Unable to dump enum \(T.self). Unexpected enum case found: \"\(value)\".", nil)
     }
 }
 
@@ -519,19 +551,31 @@ class StringifiedJSONRule<R: Rule>: Rule {
      */
     func validate(jsonValue: AnyObject) throws -> V {
         guard let jsonString = jsonValue as? String, let data = jsonString.dataUsingEncoding(NSUTF8StringEncoding) else {
-            throw ValidateError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
         }
         
         do {
             let json = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
             return try nestedRule.validate(json)
         } catch let error as NSError {
-            throw ValidateError.JSONSerialization("Unable to parse stringified JSON: \(jsonString).", error)
+            throw RuleError.InvalidJSONSerialization("Unable to parse stringified JSON: \(jsonString).", error)
         }
     }
     
-    func dump(value: V) -> AnyObject {
-        return NSNull() //TODO: dump string here
+    func dump(value: V) throws -> AnyObject {
+        do {
+            let json = try nestedRule.dump(value)
+            let data = try NSJSONSerialization.dataWithJSONObject(json, options: NSJSONWritingOptions(rawValue: 0))
+            guard let string = String(data: data, encoding: NSUTF8StringEncoding) else {
+                throw RuleError.InvalidDump("Unable to dump stringified JSON: \(json). Could not convert JSON to string.", nil)
+            }
+            return string
+        } catch let error as NSError {
+            let cause = RuleError.InvalidJSONSerialization("Could not convert object to JSON: \(value).", error)
+            throw RuleError.InvalidDump("Unable to dump stringified JSON.", cause)
+        } catch let error as RuleError {
+            throw RuleError.InvalidDump("Unable to dump stringified JSON for object: \(value)", error)
+        }
     }
 }
 

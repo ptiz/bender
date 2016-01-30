@@ -75,7 +75,7 @@ class BenderOutTests: QuickSpec {
                         Folder(name: "Folder 22", size: 12, folders: nil)
                     ])
                 
-                let d = folderRule.dump(f)
+                let d = try! folderRule.dump(f)
                 let newF = try! folderRule.validate(d)
                 
                 expect(newF.name).to(equal("Folder 1"))
@@ -105,7 +105,7 @@ class BenderOutTests: QuickSpec {
                         Passport(number: 13, issuedBy: "Nobody", valid: true)
                     ])
                 
-                let d = passportsRule.dump(passports)
+                let d = try! passportsRule.dump(passports)
                 let newP = try! passportsRule.validate(d)
                 
                 expect(newP.numbers.count).to(equal(4))
@@ -142,7 +142,7 @@ class BenderOutTests: QuickSpec {
                     Pass(issuedBy: .Unknown, active: .Inactive)
                 ]
                 
-                let d = testRules.dump(rules)
+                let d = try! testRules.dump(rules)
                 let newRules = try! testRules.validate(d)
                 
                 expect(newRules.count).to(equal(3))
