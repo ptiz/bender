@@ -173,6 +173,27 @@ class BenderOutTests: QuickSpec {
             }
         }
     
+        describe("Stringified JSON dump") {
+            it("should perform dump in accordance with the nested rule") {
+                
+                let passportRule = ClassRule(Passport())
+                    .expect("issuedBy", StringRule, { $0.issuedBy = $1 }) { $0.issuedBy }
+                    .optional("number", IntRule, { $0.number = $1 }) { $0.number }
+                    .expect("valid", BoolRule, { $0.valid = $1 }) { $0.valid }
+                
+                let personRule = ClassRule(Person())
+                    .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 }) { $0.passport }
+                    .optional("passports", StringifiedJSONRule(nestedRule: ArrayRule(itemRule: passportRule)), { $0.nested = $1 }) { $0.nested }
+                
+                let person = Person(passport: Passport(number: 101, issuedBy: "FMSS", valid: true))
+                
+                let d = try! personRule.dump(person)
+                let newP = try! personRule.validate(d)
+             
+                expect(newP.passport.number).to(equal(101))
+                expect(newP.passport.issuedBy).to(equal("FMSS"))
+            }
+        }
     }
 
 }
