@@ -75,7 +75,7 @@ struct Folder {
 }
 
 class BenderInTests: QuickSpec {
- 
+    
     override func spec() {
         
         describe("Basic struct validation") {

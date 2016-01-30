@@ -452,11 +452,12 @@ class EnumRule<T: Equatable>: Rule {
             }
             return enumValue
         })
+        
         reverseCases.append({ ev in
             if enumValue == ev  {
                 return toAny(value)
             }
-            return NSNull()
+            return nil
         })
         return self
     }
@@ -482,8 +483,8 @@ class EnumRule<T: Equatable>: Rule {
     
     func dump(value: V) -> AnyObject {
         for theCase in reverseCases {
-            if let value = theCase(value) {
-                return value
+            if let v = theCase(value) {
+                return v
             }
         }
         return NSNull()
