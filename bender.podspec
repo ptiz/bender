@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
   input by set of recursive rules and binding JSON structures to your models without 
   any additional dependecies."
   s.homepage     = "https://github.com/ptiz/bender"
-  s.license      = "MIT"
+  s.license      = { :type => 'MIT', :file => 'LICENSE' }
   s.author       = { "Evgeny Kamyshanov" => "ptiz@live.ru" }
   s.platform     = :ios
 
