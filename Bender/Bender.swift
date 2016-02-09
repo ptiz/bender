@@ -27,7 +27,6 @@
 //
 
 import Foundation
-import UIKit
 
 /**
  Bender throwing error type
@@ -36,13 +35,13 @@ import UIKit
  - ExpectedNotFound:  throws if expected was not found, contains string and optional ValidateError cause
  - JSONSerialization: throws if JSON parser fails, contains string and optional ValidateError cause
  */
-indirect enum RuleError: ErrorType {
+public indirect enum RuleError: ErrorType {
     case InvalidJSONType(String, RuleError?)
     case ExpectedNotFound(String, RuleError?)
     case InvalidJSONSerialization(String, NSError)
     case InvalidDump(String, RuleError?)
     
-    var description: String {
+    public var description: String {
         switch self {
         case InvalidJSONType(let str, let cause):
             return descr(cause, str)
@@ -74,7 +73,7 @@ indirect enum RuleError: ErrorType {
 /**
  Base generic bender protocol for validator rule.
  */
-protocol Rule {
+public protocol Rule {
     typealias V
     func validate(jsonValue: AnyObject) throws -> V
     func dump(value: V) throws -> AnyObject
@@ -105,7 +104,7 @@ internal class NumberRule<T>: Rule {
 /**
  Validator for signed and unsigned integer numerics
 */
-class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
+public class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
     let i: T = 0
     override func validateNumber(number: NSNumber) throws -> T {
         switch i {
@@ -128,7 +127,7 @@ class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
 /**
  Vaidator for floating point numerics
 */
-class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
+public class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
     let f: T = 0.0
     override func validateNumber(number: NSNumber) throws -> T {
         switch f {
@@ -140,60 +139,40 @@ class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
     }
 }
 
-func toAny<T>(t: T) throws -> AnyObject {
-    switch t {
-    case let v as Int: return NSNumber(integer: v)
-    case let v as Int8: return NSNumber(char: v)
-    case let v as Int16: return NSNumber(short: v)
-    case let v as Int32: return NSNumber(int: v)
-    case let v as Int64: return NSNumber(longLong: v)
-    case let v as UInt: return NSNumber(unsignedInteger: v)
-    case let v as UInt8: return NSNumber(unsignedChar: v)
-    case let v as UInt16: return NSNumber(unsignedShort: v)
-    case let v as UInt32: return NSNumber(unsignedInt: v)
-    case let v as UInt64: return NSNumber(unsignedLongLong: v)
-    case let v as Bool: return NSNumber(bool: v)
-    case let v as Float: return NSNumber(float: v)
-    case let v as Double: return NSNumber(double: v)
-    case let v as String: return v
-    default:
-        throw RuleError.InvalidDump("Unable to dump value of unknown type: \(t)", nil)
-    }
-}
-
 /**
  Validator for any generic type that can be cast from NSValue automatically
 */
-class TypeRule<T>: Rule {
-    typealias V = T
+public class TypeRule<T>: Rule {
+    public typealias V = T
     
-    func validate(jsonValue: AnyObject) throws -> T {
+    public func validate(jsonValue: AnyObject) throws -> T {
         guard let value = jsonValue as? T else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
         }
         return value
     }
     
-    func dump(value: V) throws -> AnyObject {
+    public func dump(value: V) throws -> AnyObject {
         return try toAny(value)
     }
 }
 
 /// Set of predefined rules for integral types
-let IntRule = IntegerRule<Int>()
-let Int64Rule = IntegerRule<Int64>()
-let UIntRule = IntegerRule<UInt>()
-let DoubleRule = FloatingRule<Double>()
-let FloatRule = FloatingRule<Float>()
-let BoolRule = TypeRule<Bool>()
-let StringRule = TypeRule<String>()
+public let IntRule = IntegerRule<Int>()
+public let Int64Rule = IntegerRule<Int64>()
+public let UIntRule = IntegerRule<UInt>()
+public let DoubleRule = FloatingRule<Double>()
+public let FloatRule = FloatingRule<Float>()
+public let BoolRule = TypeRule<Bool>()
+public let StringRule = TypeRule<String>()
 
 /**
  Validator for compound types: classes or structs. Validates JSON struct for particular type T,
  which is passed by value of type RefT.
 */
-class CompoundRule<T, RefT>: Rule {
-    typealias V = T
+public class CompoundRule<T, RefT>: Rule {
+    public typealias V = T
+
     typealias RuleClosure = (AnyObject, RefT) throws -> Void
     typealias DumpRuleClosure = (T) throws -> AnyObject
     typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
@@ -211,7 +190,7 @@ class CompoundRule<T, RefT>: Rule {
      
      - parameter factory: autoclosure for allocating object, which returns reference to object of generic type T
      */
-    init(@autoclosure(escaping) _ factory: ()->RefT) {
+    public init(@autoclosure(escaping) _ factory: ()->RefT) {
         self.factory = factory
     }
 
@@ -225,12 +204,23 @@ class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
         mandatoryRules[name] = storeRule(name, rule, bind)
         return self
     }
-    
-    func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
+
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown. Allows to provide optional bind and dump closures.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
         mandatoryRules[name] = storeRule(name, rule, bind)
         mandatoryDumpRules[name] = { struc in
             return try rule.dump(dump(struc))
@@ -248,12 +238,23 @@ class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    func optional<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
+    public func optional<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
         optionalRules[name] = storeRule(name, rule, bind)
         return self
     }
-    
-    func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
+
+    /**
+     Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
+     nothing happens.  Allows to provide optional bind and dump closures.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
         optionalRules[name] = storeRule(name, rule, bind)
         optionalDumpRules[name] = { struc in
             if let v = dump(struc) {
@@ -269,11 +270,11 @@ class CompoundRule<T, RefT>: Rule {
      
      - parameter jsonValue: JSON dictionary to be validated and converted into T
      
-     - throws: throws ValidateError
+     - throws: throws RuleError
      
      - returns: object of generic parameter argument if validation was successful
      */
-    func validate(jsonValue: AnyObject) throws -> T {
+    public func validate(jsonValue: AnyObject) throws -> T {
         guard let json = jsonValue as? [String: AnyObject] else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
         }
@@ -286,7 +287,16 @@ class CompoundRule<T, RefT>: Rule {
         return value(newStruct)
     }
     
-    func dump(value: T) throws -> AnyObject {
+    /**
+     Dumps compund object of type T to [String: AnyObject] dictionary. Throws in case if any nested rule does.
+     
+     - parameter value: compund value of type T
+     
+     - throws: throws RuleError
+     
+     - returns: [String: AnyObject] dictionary
+     */
+    public func dump(value: T) throws -> AnyObject {
         var dictionary = [String: AnyObject]()
         
         try dumpMandatoryRules(value, dictionary: &dictionary)
@@ -370,13 +380,13 @@ class CompoundRule<T, RefT>: Rule {
 /**
  Validator of compound JSON object with binding to reference type like class T. Reference type is T itself.
 */
-class ClassRule<T>: CompoundRule<T, T> {
+public class ClassRule<T>: CompoundRule<T, T> {
     
-    override init(@autoclosure(escaping) _ factory: ()->T) {
+    public override init(@autoclosure(escaping) _ factory: ()->T) {
         super.init(factory)
     }
     
-    override func value(newStruct: T) -> T {
+    public override func value(newStruct: T) -> T {
         return newStruct
     }
 }
@@ -384,22 +394,23 @@ class ClassRule<T>: CompoundRule<T, T> {
 /**
  Validator of compound JSON object with binding to value type like struct T. Reference type is ref<T>.
 */
-class StructRule<T>: CompoundRule<T, ref<T>> {
+public class StructRule<T>: CompoundRule<T, ref<T>> {
 
-    override init(@autoclosure(escaping) _ factory: ()->ref<T>) {
+    public override init(@autoclosure(escaping) _ factory: ()->ref<T>) {
         super.init(factory)
     }
     
-    override func value(newStruct: ref<T>) -> T {
+    public override func value(newStruct: ref<T>) -> T {
         return newStruct.value
     }
 }
 
 /**
- Validator for arrays of items of type T, that should be validated by rule of type R.
+ Validator for arrays of items of type T, that should be validated by rule of type R, i.e. where R.V == T.
 */
-class ArrayRule<T, R: Rule where R.V == T>: Rule {
-    typealias V = [T]
+public class ArrayRule<T, R: Rule where R.V == T>: Rule {
+    public typealias V = [T]
+
     typealias ValidateClosure = (AnyObject) throws -> T
     
     private var itemRule: R
@@ -407,9 +418,9 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
     /**
      Validator initializer
      
-     - parameter itemRule: rule for validating array items
+     - parameter itemRule: rule for validating array items of type R.V
      */
-    init(itemRule: R) {
+    public init(itemRule: R) {
         self.itemRule = itemRule
     }
     
@@ -422,7 +433,7 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
      
      - returns: array of objects of first generic parameter argument if validation was successful
      */
-    func validate(jsonValue: AnyObject) throws -> V {
+    public func validate(jsonValue: AnyObject) throws -> V {
         guard let json = jsonValue as? [AnyObject] else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected array of \(T.self).", nil)
         }
@@ -440,7 +451,16 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
         return newArray
     }
     
-    func dump(value: V) throws -> AnyObject {
+    /**
+     Dumps array of AnyObject type in case of success. Throws if cannot dump any item in source array.
+     
+     - parameter value: array with items of type T
+     
+     - throws: throws RuleError if cannot dump any item in source array
+     
+     - returns: returns array of AnyObject, dumped by item rule
+     */
+    public func dump(value: V) throws -> AnyObject {
         var array = [AnyObject]()
         for (index, t) in value.enumerate() {
             do {
@@ -457,11 +477,11 @@ class ArrayRule<T, R: Rule where R.V == T>: Rule {
  Validator for enum of type T. Checks that JSON value to be validated is equal to any option stored and .
  If all stored properties do not match, throws ValidateError.
 */
-class EnumRule<T: Equatable>: Rule {
-    typealias V = T
+public class EnumRule<T: Equatable>: Rule {
+    public typealias V = T
     
-    var cases: [(AnyObject) throws -> T?] = []
-    var reverseCases: [(T) throws -> AnyObject?] = []
+    private var cases: [(AnyObject) throws -> T?] = []
+    private var reverseCases: [(T) throws -> AnyObject?] = []
     
     /**
      Method for declaring matching between given value and enum case of type T. 
@@ -472,7 +492,7 @@ class EnumRule<T: Equatable>: Rule {
      
      - returns: self for options declaration chaining
      */
-    func option<S: Equatable>(value: S, _ enumValue: T) -> Self {
+    public func option<S: Equatable>(value: S, _ enumValue: T) -> Self {
         cases.append({ jsonValue in
             guard let json = jsonValue as? S where json == value else {
                 return nil
@@ -498,7 +518,7 @@ class EnumRule<T: Equatable>: Rule {
      
      - returns: returns enum case of type T if matching value found, throws otherwise
      */
-    func validate(jsonValue: AnyObject) throws -> V {
+    public func validate(jsonValue: AnyObject) throws -> V {
         for theCase in cases {
             if let value = try theCase(jsonValue) {
                 return value
@@ -508,7 +528,16 @@ class EnumRule<T: Equatable>: Rule {
         throw RuleError.ExpectedNotFound("Unable to validate enum \(T.self). Unexpected enum case found: \"\(jsonValue)\".", nil)
     }
     
-    func dump(value: V) throws -> AnyObject {
+    /**
+     Dumps AnyObject which is related to the value provided, throws in case if it is unable to convert the value.
+     
+     - parameter value: enum value provided
+     
+     - throws: RuleError in case if it is impossible to covert the value
+     
+     - returns: AnyObject to which the enum value has been encoded
+     */
+    public func dump(value: V) throws -> AnyObject {
         for theCase in reverseCases {
             do {
                 if let v = try theCase(value) {
@@ -526,17 +555,17 @@ class EnumRule<T: Equatable>: Rule {
 /**
  Validator of JSON encoded into string like this: "\"field": \"value\"". Encoded JSON should be validated by given rule of type R.
 */
-class StringifiedJSONRule<R: Rule>: Rule {
-    typealias V = R.V
+public class StringifiedJSONRule<R: Rule>: Rule {
+    public typealias V = R.V
     
-    let nestedRule: R
+    private let nestedRule: R
     
     /**
      Validator initializer
      
      - parameter nestedRule: rule to validate JSON decoded from string
      */
-    init(nestedRule: R) {
+    public init(nestedRule: R) {
         self.nestedRule = nestedRule
     }
     
@@ -549,7 +578,7 @@ class StringifiedJSONRule<R: Rule>: Rule {
      
      - returns: returns object of nested rule struct type (i.e. R.V), if validated. Throws otherwise.
      */
-    func validate(jsonValue: AnyObject) throws -> V {
+    public func validate(jsonValue: AnyObject) throws -> V {
         guard let jsonString = jsonValue as? String, let data = jsonString.dataUsingEncoding(NSUTF8StringEncoding) else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
         }
@@ -562,7 +591,16 @@ class StringifiedJSONRule<R: Rule>: Rule {
         }
     }
     
-    func dump(value: V) throws -> AnyObject {
+    /**
+     Dumps string with JSON encoded in UTF-8 in case of success. Throws if cannot dump nested rule.
+     
+     - parameter value: value of type R.V, i.e. nested rule type
+     
+     - throws: RuleError if cannot dump nested rule
+     
+     - returns: string with JSON encoded in UTF-8
+     */
+    public func dump(value: V) throws -> AnyObject {
         do {
             let json = try nestedRule.dump(value)
             let data = try NSJSONSerialization.dataWithJSONObject(json, options: NSJSONWritingOptions(rawValue: 0))
@@ -582,10 +620,40 @@ class StringifiedJSONRule<R: Rule>: Rule {
 /**
  Generic class for boxing value type.
 */
-class ref<T> {
-    var value: T
+public class ref<T> {
+    public var value: T
     
-    init(_ value: T) {
+    public init(_ value: T) {
         self.value = value
+    }
+}
+
+/**
+ Helper generic function for converting integral values of type T to AnyObject.
+ 
+ - parameter t: value of type T to be converted
+ 
+ - throws: throws RuleError if type of the value cannot be converted to AnyObject
+ 
+ - returns: returns AnyObject with boxed t value inside
+ */
+func toAny<T>(t: T) throws -> AnyObject {
+    switch t {
+    case let v as Int: return NSNumber(integer: v)
+    case let v as Int8: return NSNumber(char: v)
+    case let v as Int16: return NSNumber(short: v)
+    case let v as Int32: return NSNumber(int: v)
+    case let v as Int64: return NSNumber(longLong: v)
+    case let v as UInt: return NSNumber(unsignedInteger: v)
+    case let v as UInt8: return NSNumber(unsignedChar: v)
+    case let v as UInt16: return NSNumber(unsignedShort: v)
+    case let v as UInt32: return NSNumber(unsignedInt: v)
+    case let v as UInt64: return NSNumber(unsignedLongLong: v)
+    case let v as Bool: return NSNumber(bool: v)
+    case let v as Float: return NSNumber(float: v)
+    case let v as Double: return NSNumber(double: v)
+    case let v as String: return v
+    default:
+        throw RuleError.InvalidDump("Unable to dump value of unknown type: \(t)", nil)
     }
 }
