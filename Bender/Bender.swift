@@ -270,7 +270,7 @@ public class CompoundRule<T, RefT>: Rule {
      
      - parameter jsonValue: JSON dictionary to be validated and converted into T
      
-     - throws: throws ValidateError
+     - throws: throws RuleError
      
      - returns: object of generic parameter argument if validation was successful
      */
@@ -287,6 +287,15 @@ public class CompoundRule<T, RefT>: Rule {
         return value(newStruct)
     }
     
+    /**
+     Dumps compund object of type T to [String: AnyObject] dictionary. Throws in case if any nested rule does.
+     
+     - parameter value: compund value of type T
+     
+     - throws: throws RuleError
+     
+     - returns: [String: AnyObject] dictionary
+     */
     public func dump(value: T) throws -> AnyObject {
         var dictionary = [String: AnyObject]()
         
@@ -397,7 +406,7 @@ public class StructRule<T>: CompoundRule<T, ref<T>> {
 }
 
 /**
- Validator for arrays of items of type T, that should be validated by rule of type R.
+ Validator for arrays of items of type T, that should be validated by rule of type R, i.e. where R.V == T.
 */
 public class ArrayRule<T, R: Rule where R.V == T>: Rule {
     public typealias V = [T]
@@ -409,7 +418,7 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
     /**
      Validator initializer
      
-     - parameter itemRule: rule for validating array items
+     - parameter itemRule: rule for validating array items of type R.V
      */
     public init(itemRule: R) {
         self.itemRule = itemRule
@@ -442,6 +451,15 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
         return newArray
     }
     
+    /**
+     Dumps array of AnyObject type in case of success. Throws if cannot dump any item in source array.
+     
+     - parameter value: array with items of type T
+     
+     - throws: throws RuleError if cannot dump any item in source array
+     
+     - returns: returns array of AnyObject, dumped by item rule
+     */
     public func dump(value: V) throws -> AnyObject {
         var array = [AnyObject]()
         for (index, t) in value.enumerate() {
@@ -510,6 +528,15 @@ public class EnumRule<T: Equatable>: Rule {
         throw RuleError.ExpectedNotFound("Unable to validate enum \(T.self). Unexpected enum case found: \"\(jsonValue)\".", nil)
     }
     
+    /**
+     Dumps AnyObject which is related to the value provided, throws in case if it is unable to convert the value.
+     
+     - parameter value: enum value provided
+     
+     - throws: RuleError in case if it is impossible to covert the value
+     
+     - returns: AnyObject to which the enum value has been encoded
+     */
     public func dump(value: V) throws -> AnyObject {
         for theCase in reverseCases {
             do {
@@ -564,6 +591,15 @@ public class StringifiedJSONRule<R: Rule>: Rule {
         }
     }
     
+    /**
+     Dumps string with JSON encoded in UTF-8 in case of success. Throws if cannot dump nested rule.
+     
+     - parameter value: value of type R.V, i.e. nested rule type
+     
+     - throws: RuleError if cannot dump nested rule
+     
+     - returns: string with JSON encoded in UTF-8
+     */
     public func dump(value: V) throws -> AnyObject {
         do {
             let json = try nestedRule.dump(value)
