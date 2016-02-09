@@ -8,9 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		45AB6AA5124B320B85642C6E /* Pods_BenderTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */; };
+		5B05ABA91C54F71100339915 /* BenderOutputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B05ABA81C54F71100339915 /* BenderOutputTests.swift */; };
 		5B54EF041C3A90AE0072B2A8 /* Bender.h in Headers */ = {isa = PBXBuildFile; fileRef = 5B54EF031C3A90AE0072B2A8 /* Bender.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5B54EF0B1C3A90AE0072B2A8 /* Bender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B54EF001C3A90AE0072B2A8 /* Bender.framework */; };
-		5B54EF101C3A90AE0072B2A8 /* BenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF0F1C3A90AE0072B2A8 /* BenderTests.swift */; };
+		5B54EF101C3A90AE0072B2A8 /* BenderInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF0F1C3A90AE0072B2A8 /* BenderInputTests.swift */; };
 		5B54EF1B1C3A90FD0072B2A8 /* Bender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF1A1C3A90FD0072B2A8 /* Bender.swift */; };
 		5B54EF1D1C3D38A60072B2A8 /* basic_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B54EF1C1C3D38A60072B2A8 /* basic_test.json */; };
 		5B54EF1F1C3D39DB0072B2A8 /* array_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B54EF1E1C3D39DB0072B2A8 /* array_test.json */; };
@@ -33,11 +34,12 @@
 
 /* Begin PBXFileReference section */
 		1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BenderTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B05ABA81C54F71100339915 /* BenderOutputTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BenderOutputTests.swift; sourceTree = "<group>"; };
 		5B54EF001C3A90AE0072B2A8 /* Bender.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Bender.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B54EF031C3A90AE0072B2A8 /* Bender.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bender.h; sourceTree = "<group>"; };
 		5B54EF051C3A90AE0072B2A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5B54EF0A1C3A90AE0072B2A8 /* BenderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5B54EF0F1C3A90AE0072B2A8 /* BenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenderTests.swift; sourceTree = "<group>"; };
+		5B54EF0F1C3A90AE0072B2A8 /* BenderInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenderInputTests.swift; sourceTree = "<group>"; };
 		5B54EF111C3A90AE0072B2A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5B54EF1A1C3A90FD0072B2A8 /* Bender.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Bender.swift; sourceTree = "<group>"; };
 		5B54EF1C1C3D38A60072B2A8 /* basic_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = basic_test.json; sourceTree = "<group>"; };
@@ -112,7 +114,8 @@
 		5B54EF0E1C3A90AE0072B2A8 /* BenderTests */ = {
 			isa = PBXGroup;
 			children = (
-				5B54EF0F1C3A90AE0072B2A8 /* BenderTests.swift */,
+				5B54EF0F1C3A90AE0072B2A8 /* BenderInputTests.swift */,
+				5B05ABA81C54F71100339915 /* BenderOutputTests.swift */,
 				5B54EF111C3A90AE0072B2A8 /* Info.plist */,
 				5B54EF1C1C3D38A60072B2A8 /* basic_test.json */,
 				5B54EF1E1C3D39DB0072B2A8 /* array_test.json */,
@@ -308,7 +311,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B54EF101C3A90AE0072B2A8 /* BenderTests.swift in Sources */,
+				5B05ABA91C54F71100339915 /* BenderOutputTests.swift in Sources */,
+				5B54EF101C3A90AE0072B2A8 /* BenderInputTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
