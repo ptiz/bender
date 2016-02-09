@@ -12,7 +12,7 @@ Bender
 - supports classes/structs with all JSON natural field types, nested/recursively nested ones, arrays as class/struct fileds or JSON root ones, custom enums, 'stringified' JSON;
 - allows you to dump data structures using validation rules written once;
 - allows you to write your own validator/dumper in a couple of dosen lines;
-- small: ~600loc with LOTS of comments.
+- small: ~350 loc in Swift.
 
 ### Example
 Let's assume we receive in JSON the struct like this:
