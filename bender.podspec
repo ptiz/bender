@@ -3,7 +3,7 @@
 
 Pod::Spec.new do |s|
 
-  s.name         = "bender"
+  s.name         = "Bender"
   s.version      = "1.1.0"
   s.summary      = "JSON validating and binding library written in Swift"
   s.description  = "Not just yet another JSON mapping library, but library for validating 
@@ -14,12 +14,12 @@ Pod::Spec.new do |s|
   s.author       = { "Evgeny Kamyshanov" => "ptiz@live.ru" }
   s.platform     = :ios
 
-  # s.ios.deployment_target = "5.0"
+  s.ios.deployment_target = "8.0"
   # s.osx.deployment_target = "10.7"
   # s.watchos.deployment_target = "2.0"
   # s.tvos.deployment_target = "9.0"
 
   s.source       = { :git => "https://github.com/ptiz/bender.git", :tag => "1.1.0" }
-  s.source_files  = "Bender", "Bender/**/*.{h,swift}"
+  s.source_files  = "Bender", "Bender/**/*.{swift}"
 
 end
