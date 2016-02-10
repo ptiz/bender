@@ -121,7 +121,7 @@ public protocol Rule {
 ```
 
 ### Installation
-**Cocoapods:**
+**CocoaPods:**
 ```
   pod 'Bender', '~> 1.1.0'
 ```
