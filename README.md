@@ -8,10 +8,10 @@ Bender
 - type-safe;
 - focuses on JSON data describing, not your classes;
 - supports mandatory/optional fields checking with error throwing;
-- does not require exact field naming or even field existance;
-- supports classes/structs with all JSON natural field types, nested/recursively nested ones, arrays as class/struct fileds or JSON root ones, custom enums, 'stringified' JSON;
+- does not require exact field naming or even field existence;
+- supports classes/structs with all JSON natural field types, nested/recursively nested ones, arrays as class/struct fields or JSON root ones, custom enums, 'stringified' JSON;
 - allows you to dump data structures using validation rules written once;
-- allows you to write your own validator/dumper in a couple of dosen lines;
+- allows you to write your own validator/dumper in a couple of dozen lines;
 - small: ~350 loc in Swift.
 
 ### Example
