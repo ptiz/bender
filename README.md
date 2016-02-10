@@ -1,5 +1,5 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.1.1-brightgreen.svg)]()
 
 Not just yet another JSON mapping framework for Swift, but tool for validating and binding JSON structures to your models.
 
@@ -59,6 +59,8 @@ And for sure we can dump the Folder class to JSON object using the same rule. Al
   let folderRule = ClassRule(Folder())
     .expect("title", StringRule, { $0.name = $1 }) { $0.name }
     .expect("size", Int64Rule, { $0.size = $1 }) { $0.size }
+    
+  folderRule    
     .optional("folders", ArrayRule(itemRule: folderRule), { $0.folders = $1 }) { $0.folders }
 ```
 Now we can use the rule for serializing a Folder class:
@@ -84,6 +86,30 @@ Rules with nested rules:
 - ArrayRule - bind array of ony other type, validated by item rule
 - StringifiedJSONRule - bind any rule from JSON encoded into UTF-8 string
 
+### Error handling
+Bender throws RuleError enum in case of validating or dumping errors, which stores optional information about a cause of error. 
+
+Let's assume we have erroneous JSON, in which one int value turns out to be a string:
+```json
+{
+  "title": "root",
+  "size": 128,
+  "folders": [
+    {
+      "title": "home",
+      "size": "256 Error!"
+    }
+  ]
+}
+```
+Validation throws the RuleError, and you can get the ```error.description```:
+```
+Unable to validate optional field "folders" for Folder.
+Unable to validate array of Folder: item #0 could not be validated.
+Unable to validate mandatory field "size" for Folder.
+Value of unexpected type found: "256 Error!". Expected Int64.
+```
+
 ### Extensibility
 You can add your own rule to the system. All you need for that is to conform to very simple ```Rule``` protocol:
 ```swift
@@ -99,6 +125,10 @@ public protocol Rule {
 ```
   pod 'Bender', '~> 1.1.0'
 ```
+**Carthage:**
+
+Bender is ready for Carthage since v. 1.1.1
+
 **Manual:**
 
 Bender is one-file project. So you can just add ```Bender.swift``` file to your project.
