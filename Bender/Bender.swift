@@ -483,6 +483,9 @@ public class EnumRule<T: Equatable>: Rule {
     private var cases: [(AnyObject) throws -> T?] = []
     private var reverseCases: [(T) throws -> AnyObject?] = []
     
+    public init() {
+    }
+    
     /**
      Method for declaring matching between given value and enum case of type T. 
      JSON value should be comparable with the value, i.e. should cast to S which is Equatable.
