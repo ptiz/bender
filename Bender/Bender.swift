@@ -170,8 +170,15 @@ public class TypeRule<T>: Rule {
 
 /// Set of predefined rules for integral types
 public let IntRule = IntegerRule<Int>()
+public let Int8Rule = IntegerRule<Int8>()
+public let Int16Rule = IntegerRule<Int16>()
+public let Int32Rule = IntegerRule<Int32>()
 public let Int64Rule = IntegerRule<Int64>()
 public let UIntRule = IntegerRule<UInt>()
+public let UInt8Rule = IntegerRule<UInt8>()
+public let UInt16Rule = IntegerRule<UInt16>()
+public let UInt32Rule = IntegerRule<UInt32>()
+public let UInt64Rule = IntegerRule<UInt64>()
 public let DoubleRule = FloatingRule<Double>()
 public let FloatRule = FloatingRule<Float>()
 public let BoolRule = TypeRule<Bool>()
