@@ -84,7 +84,7 @@ public protocol Rule {
 */
 internal class NumberRule<T>: Rule {
     typealias V = T
-    
+        
     func validate(jsonValue: AnyObject) throws -> T {
         guard let number = jsonValue as? NSNumber else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
@@ -106,6 +106,10 @@ internal class NumberRule<T>: Rule {
 */
 public class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
     let i: T = 0
+    
+    public override init() {
+    }
+    
     override func validateNumber(number: NSNumber) throws -> T {
         switch i {
         case is Int: return number.integerValue as! T
@@ -129,6 +133,10 @@ public class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
 */
 public class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
     let f: T = 0.0
+    
+    public override init() {
+    }
+    
     override func validateNumber(number: NSNumber) throws -> T {
         switch f {
         case is Float: return number.floatValue as! T
@@ -144,6 +152,9 @@ public class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
 */
 public class TypeRule<T>: Rule {
     public typealias V = T
+    
+    public init() {
+    }
     
     public func validate(jsonValue: AnyObject) throws -> T {
         guard let value = jsonValue as? T else {
