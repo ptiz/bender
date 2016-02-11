@@ -40,6 +40,7 @@ public indirect enum RuleError: ErrorType {
     case ExpectedNotFound(String, RuleError?)
     case InvalidJSONSerialization(String, NSError)
     case InvalidDump(String, RuleError?)
+    case UnmetRequirement(String, RuleError?)
     
     public var description: String {
         switch self {
@@ -50,6 +51,8 @@ public indirect enum RuleError: ErrorType {
         case .InvalidJSONSerialization(let str, let err):
             return descr(err, str)
         case .InvalidDump(let str, let cause):
+            return descr(cause, str)
+        case .UnmetRequirement(let str, let cause):
             return descr(cause, str)
         }
     }
@@ -192,8 +195,11 @@ public class CompoundRule<T, RefT>: Rule {
     public typealias V = T
 
     typealias RuleClosure = (AnyObject, RefT) throws -> Void
+    typealias RequirementClosure = (AnyObject) throws -> Bool
     typealias DumpRuleClosure = (T) throws -> AnyObject
     typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
+    
+    private var requirements = [String: RequirementClosure]()
     
     private var mandatoryRules = [String: RuleClosure]()
     private var optionalRules = [String: RuleClosure]()
@@ -210,6 +216,21 @@ public class CompoundRule<T, RefT>: Rule {
      */
     public init(@autoclosure(escaping) _ factory: ()->RefT) {
         self.factory = factory
+    }
+    
+    /**
+     Methoid for declaring requirement for input data, which must be met. Did not cause creation of a new bind item.
+     Throws if the requirement was not met. No binding is possible while checking requirement.
+     
+     - parameter name:        string name if the filed which value is checked
+     - parameter rule:        rule that should validate the value of the field
+     - parameter requirement: closure, that receives unmutable validated field value to be checked and returns true if requiremet was met and false otherwise.
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func required<R: Rule>(name: String, _ rule: R, requirement: (R.V)->Bool) -> Self {
+        requirements[name] = { requirement(try rule.validate($0)) }
+        return self
     }
 
     /**
@@ -297,6 +318,8 @@ public class CompoundRule<T, RefT>: Rule {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
         }
         
+        try validateRequirements(json)
+        
         let newStruct = factory()
         
         try validateMandatoryRules(json, withNewStruct: newStruct)
@@ -342,6 +365,26 @@ public class CompoundRule<T, RefT>: Rule {
                 b(struc, try rule.validate(json))
             } else {
                 try rule.validate(json)
+            }
+        }
+    }
+    
+    private func validateRequirements(json:[String: AnyObject]) throws {
+        for (name, rule) in requirements {
+            guard let value = json[name] else {
+                throw RuleError.ExpectedNotFound("Unable to check the requirement, field \"\(name)\" not found in struct.", nil)
+            }
+            
+            do {
+                if !(try rule(value)) {
+                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(name)\" with value \"\(value)\"", nil)
+                }
+            } catch let err as RuleError {
+                switch err {
+                case .UnmetRequirement: throw err
+                default:
+                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(name)\" with value \"\(value)\"", err)
+                }
             }
         }
     }
