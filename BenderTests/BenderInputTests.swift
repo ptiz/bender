@@ -168,6 +168,19 @@ class BenderInTests: QuickSpec {
                     })
             }
             
+            it("should throw if requirement was not met") {
+
+                let jsonObject = jsonFromFile("basic_test")
+                
+                let personRule = ClassRule(Person())
+                    .required("name", StringRule) { $0 == "John" }
+                    .required("age", FloatRule) { $0 == 100.0 } //actual 37.5
+
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.UnmetRequirement("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
+                    expect(error.description).to(equal("Requirement was not met for field \"age\" with value \"37.5\""))
+                    })                
+            }
         }
         
         describe("Array validation") {

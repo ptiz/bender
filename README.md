@@ -1,5 +1,5 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.1.1-brightgreen.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.2.0-brightgreen.svg)]()
 
 Not just yet another JSON mapping framework for Swift, but tool for validating and binding JSON structures to your models.
 
@@ -42,7 +42,11 @@ How could we check if we got the proper data? Bender helps us to describe our ex
     .expect("title", StringRule) { $0.name = $1 }
     .expect("size", Int64Rule) { $0.size = $1 }
 ```
-What does it mean? We literally created a _rule_, that describes what we expect in our JSON: a struct with two mandatory fields, one of them is String and named "title", another is Int64 and named "size". But after all we want to _bind_ values that could be extracted from these fields into fields of a corresponding class Folder. ClassRule gets ```@autoclosure``` that constructs new Folder object each time we are going to validate corresponding JSON fragment.
+What does it mean? We literally created a _rule_, that describes what we expect in our JSON: a struct with two mandatory fields, one of them is String and named "title", another is Int64 and named "size". But after all we want to _bind_ values that can be extracted from these fields into fields of a corresponding class Folder. 
+
+ClassRule gets ```@autoclosure``` that constructs new Folder object each time we are going to validate corresponding JSON fragment.
+
+In bind closures like ```{ $0.name = $1 }``` we pass Folder object reference as a $0 param and value exctracted for field "name" from JSON as $1. It is up to you what exact method of bindable item to call here. There can be adapters, coders, decoders, transformers etc., not only plain vanilla assignment.
 
 The rule may be declared once but used everywhere we have a new JSON object:
 ```swift
@@ -69,9 +73,7 @@ Now we can use the rule for serializing a Folder class:
 ```
 ### Rule list
 Basic rules:
-- IntRule
-- Int64Rule
-- UIntRule
+- IntRule, Int8Rule, Int16Rule, Int32Rule, Int64Rule (and corresponding UInt... family)
 - DoubleRule
 - FloatRule
 - BoolRule
@@ -109,6 +111,17 @@ Unable to validate array of Folder: item #0 could not be validated.
 Unable to validate mandatory field "size" for Folder.
 Value of unexpected type found: "256 Error!". Expected Int64.
 ```
+### Structs support
+Swift structs also supported as bindable items. For example, if our ```Folder``` is struct, not class, we still can bind it, using almost the same ```StructRule```:
+```swift
+  let folderRule = StructRule(ref(Folder(name: "", size: 0)))
+    .expect("title", StringRule, { $0.value.name = $1 }) { $0.name }
+    .expect("size", Int64Rule, { $0.value.size = $1 }) { $0.size }
+    
+  folderRule    
+    .optional("folders", ArrayRule(itemRule: folderRule), { $0.value.folders = $1 }) { $0.folders }
+```
+Have you noticed additional ```ref```? It is boxing object that allows us to pass the struct copied by value as reference through the rule set during validation. Also in our bind closures we should unbox it by calling ```$0.value``` which returns mutable Folder struct.
 
 ### Extensibility
 You can add your own rule to the system. All you need for that is to conform to very simple ```Rule``` protocol:
@@ -123,11 +136,12 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.1.0'
+  pod 'Bender', '~> 1.2.0'
 ```
 **Carthage:**
-
-Bender is ready for Carthage since v. 1.1.1
+```
+github "ptiz/Bender" == 1.2.0
+```
 
 **Manual:**
 

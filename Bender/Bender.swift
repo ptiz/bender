@@ -40,6 +40,7 @@ public indirect enum RuleError: ErrorType {
     case ExpectedNotFound(String, RuleError?)
     case InvalidJSONSerialization(String, NSError)
     case InvalidDump(String, RuleError?)
+    case UnmetRequirement(String, RuleError?)
     
     public var description: String {
         switch self {
@@ -50,6 +51,8 @@ public indirect enum RuleError: ErrorType {
         case .InvalidJSONSerialization(let str, let err):
             return descr(err, str)
         case .InvalidDump(let str, let cause):
+            return descr(cause, str)
+        case .UnmetRequirement(let str, let cause):
             return descr(cause, str)
         }
     }
@@ -84,7 +87,7 @@ public protocol Rule {
 */
 internal class NumberRule<T>: Rule {
     typealias V = T
-    
+        
     func validate(jsonValue: AnyObject) throws -> T {
         guard let number = jsonValue as? NSNumber else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
@@ -106,6 +109,10 @@ internal class NumberRule<T>: Rule {
 */
 public class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
     let i: T = 0
+    
+    public override init() {
+    }
+    
     override func validateNumber(number: NSNumber) throws -> T {
         switch i {
         case is Int: return number.integerValue as! T
@@ -129,6 +136,10 @@ public class IntegerRule<T: protocol<IntegerType>>: NumberRule<T> {
 */
 public class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
     let f: T = 0.0
+    
+    public override init() {
+    }
+    
     override func validateNumber(number: NSNumber) throws -> T {
         switch f {
         case is Float: return number.floatValue as! T
@@ -145,6 +156,9 @@ public class FloatingRule<T: protocol<FloatLiteralConvertible>>: NumberRule<T> {
 public class TypeRule<T>: Rule {
     public typealias V = T
     
+    public init() {
+    }
+    
     public func validate(jsonValue: AnyObject) throws -> T {
         guard let value = jsonValue as? T else {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
@@ -159,8 +173,15 @@ public class TypeRule<T>: Rule {
 
 /// Set of predefined rules for integral types
 public let IntRule = IntegerRule<Int>()
+public let Int8Rule = IntegerRule<Int8>()
+public let Int16Rule = IntegerRule<Int16>()
+public let Int32Rule = IntegerRule<Int32>()
 public let Int64Rule = IntegerRule<Int64>()
 public let UIntRule = IntegerRule<UInt>()
+public let UInt8Rule = IntegerRule<UInt8>()
+public let UInt16Rule = IntegerRule<UInt16>()
+public let UInt32Rule = IntegerRule<UInt32>()
+public let UInt64Rule = IntegerRule<UInt64>()
 public let DoubleRule = FloatingRule<Double>()
 public let FloatRule = FloatingRule<Float>()
 public let BoolRule = TypeRule<Bool>()
@@ -174,8 +195,11 @@ public class CompoundRule<T, RefT>: Rule {
     public typealias V = T
 
     typealias RuleClosure = (AnyObject, RefT) throws -> Void
+    typealias RequirementClosure = (AnyObject) throws -> Bool
     typealias DumpRuleClosure = (T) throws -> AnyObject
     typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
+    
+    private var requirements = [String: RequirementClosure]()
     
     private var mandatoryRules = [String: RuleClosure]()
     private var optionalRules = [String: RuleClosure]()
@@ -192,6 +216,21 @@ public class CompoundRule<T, RefT>: Rule {
      */
     public init(@autoclosure(escaping) _ factory: ()->RefT) {
         self.factory = factory
+    }
+    
+    /**
+     Methoid for declaring requirement for input data, which must be met. Did not cause creation of a new bind item.
+     Throws if the requirement was not met. No binding is possible while checking requirement.
+     
+     - parameter name:        string name if the filed which value is checked
+     - parameter rule:        rule that should validate the value of the field
+     - parameter requirement: closure, that receives unmutable validated field value to be checked and returns true if requiremet was met and false otherwise.
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func required<R: Rule>(name: String, _ rule: R, requirement: (R.V)->Bool) -> Self {
+        requirements[name] = { requirement(try rule.validate($0)) }
+        return self
     }
 
     /**
@@ -279,6 +318,8 @@ public class CompoundRule<T, RefT>: Rule {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
         }
         
+        try validateRequirements(json)
+        
         let newStruct = factory()
         
         try validateMandatoryRules(json, withNewStruct: newStruct)
@@ -324,6 +365,26 @@ public class CompoundRule<T, RefT>: Rule {
                 b(struc, try rule.validate(json))
             } else {
                 try rule.validate(json)
+            }
+        }
+    }
+    
+    private func validateRequirements(json:[String: AnyObject]) throws {
+        for (name, rule) in requirements {
+            guard let value = json[name] else {
+                throw RuleError.ExpectedNotFound("Unable to check the requirement, field \"\(name)\" not found in struct.", nil)
+            }
+            
+            do {
+                if !(try rule(value)) {
+                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(name)\" with value \"\(value)\"", nil)
+                }
+            } catch let err as RuleError {
+                switch err {
+                case .UnmetRequirement: throw err
+                default:
+                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(name)\" with value \"\(value)\"", err)
+                }
             }
         }
     }
@@ -482,6 +543,9 @@ public class EnumRule<T: Equatable>: Rule {
     
     private var cases: [(AnyObject) throws -> T?] = []
     private var reverseCases: [(T) throws -> AnyObject?] = []
+    
+    public init() {
+    }
     
     /**
      Method for declaring matching between given value and enum case of type T. 
