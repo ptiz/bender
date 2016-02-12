@@ -35,7 +35,7 @@ import Foundation
  - ExpectedNotFound:  throws if expected was not found, contains string and optional ValidateError cause
  - JSONSerialization: throws if JSON parser fails, contains string and optional ValidateError cause
  */
-public indirect enum RuleError: ErrorType {
+public indirect enum RuleError: ErrorType, CustomStringConvertible {
     case InvalidJSONType(String, RuleError?)
     case ExpectedNotFound(String, RuleError?)
     case InvalidJSONSerialization(String, NSError)
