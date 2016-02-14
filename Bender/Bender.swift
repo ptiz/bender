@@ -391,7 +391,7 @@ public class CompoundRule<T, RefT>: Rule {
     
     private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
         for (name, rule) in mandatoryRules {
-            guard let value = json[name] else {
+            guard let value = json[name] where !(value is NSNull) else {
                 throw RuleError.ExpectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
             
@@ -407,6 +407,9 @@ public class CompoundRule<T, RefT>: Rule {
         for (name, rule) in optionalRules {
             if let value = json[name] {
                 do {
+                    if value is NSNull {
+                        continue
+                    }
                     try rule(value, newStruct)
                 } catch let err as RuleError {
                     throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
