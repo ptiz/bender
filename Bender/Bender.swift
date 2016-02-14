@@ -199,13 +199,13 @@ public class CompoundRule<T, RefT>: Rule {
     typealias DumpRuleClosure = (T) throws -> AnyObject
     typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
     
-    private var requirements = [String: RequirementClosure]()
+    private var requirements = [(String, RequirementClosure)]()
     
-    private var mandatoryRules = [String: RuleClosure]()
-    private var optionalRules = [String: RuleClosure]()
+    private var mandatoryRules = [(String, RuleClosure)]()
+    private var optionalRules = [(String, RuleClosure)]()
     
-    private var mandatoryDumpRules = [String: DumpRuleClosure]()
-    private var optionalDumpRules = [String: DumpOptionalRuleClosure]()
+    private var mandatoryDumpRules = [(String, DumpRuleClosure)]()
+    private var optionalDumpRules = [(String, DumpOptionalRuleClosure)]()
     
     private let factory: ()->RefT
     
@@ -229,7 +229,7 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func required<R: Rule>(name: String, _ rule: R, requirement: (R.V)->Bool) -> Self {
-        requirements[name] = { requirement(try rule.validate($0)) }
+        requirements.append((name,  { requirement(try rule.validate($0)) }))
         return self
     }
 
@@ -244,7 +244,7 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        mandatoryRules[name] = storeRule(name, rule, bind)
+        mandatoryRules.append((name, storeRule(name, rule, bind)))
         return self
     }
 
@@ -260,10 +260,8 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
-        mandatoryRules[name] = storeRule(name, rule, bind)
-        mandatoryDumpRules[name] = { struc in
-            return try rule.dump(dump(struc))
-        }
+        mandatoryRules.append((name, storeRule(name, rule, bind)))
+        mandatoryDumpRules.append((name, { struc in return try rule.dump(dump(struc)) }))
         return self
     }
     
@@ -278,7 +276,7 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func optional<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        optionalRules[name] = storeRule(name, rule, bind)
+        optionalRules.append((name, storeRule(name, rule, bind)))
         return self
     }
 
@@ -294,13 +292,13 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        optionalRules[name] = storeRule(name, rule, bind)
-        optionalDumpRules[name] = { struc in
+        optionalRules.append((name, storeRule(name, rule, bind)))
+        optionalDumpRules.append((name, { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
             }
             return nil
-        }
+        }))
         return self
     }
     
