@@ -4,7 +4,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "Bender"
-  s.version      = "1.2.0"
+  s.version      = "1.2.1"
   s.summary      = "JSON validating and binding library written in Swift"
   s.description  = "Not just yet another JSON mapping library, but library for validating 
   input by set of recursive rules and binding JSON structures to your models without 
@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   # s.watchos.deployment_target = "2.0"
   # s.tvos.deployment_target = "9.0"
 
-  s.source       = { :git => "https://github.com/ptiz/bender.git", :tag => "1.2.0" }
+  s.source       = { :git => "https://github.com/ptiz/bender.git", :tag => "1.2.1" }
   s.source_files  = "Bender", "Bender/**/*.{swift}"
 
 end
