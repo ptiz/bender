@@ -123,6 +123,72 @@ Swift structs also supported as bindable items. For example, if our ```Folder```
 ```
 Have you noticed additional ```ref```? It is boxing object that allows us to pass the struct copied by value as reference through the rule set during validation. Also in our bind closures we should unbox it by calling ```$0.value``` which returns mutable Folder struct.
 
+### Core Data
+Your managed objects can be easily mapped as well. Let's imagine beloved Employee/Department scheme, but a bit more complicated than usual: Employee and Departments are linked by weak identifier, department name.
+
+So here goes Employee...
+```json
+{
+  "name": "John Doe",
+  "departmentName": "Marketing"
+}
+```
+... and Department
+```json
+{
+  "name": "Marketing"
+}
+```
+
+At the same time our Core Data scheme can be traditional one (let's omit some boring boilerplate Core Data code):
+```swift
+class Employee: NSManagedObject {
+  @NSManaged var name: String
+  @NSManaged var department: Department?  
+}
+
+class Department: NSManagedObject {
+  @NSManaged var name: String
+  @NSManaged var employees: NSSet
+}
+
+func createEmployee(context: NSManagedObjectContext) -> Employee {
+  /// ... All that 'NSEntityDescription' and 'NSManagedObject' stuff
+}
+
+func createDepartment(context: NSManagedObjectContext) -> Department {
+  /// ... All that 'NSEntityDescription' and 'NSManagedObject' stuff
+}
+```
+
+It is time to create corresponding rules. But the object factories depend on runtime context. So we can wrap our rules creation code with simple functions:
+```swift
+func departmentByName(context: NSManagedObjectContext, name: String) -> Department? {
+  /// ... Searches for department by its name
+}
+
+func employeeRule(context: NSManagedObjectContext) -> ClassRule<Employee> {
+  return ClassRule(createEmployee(context))
+    .expect("name", StringRule) { $0.name = $1 }
+    .optional("departmentName", StringRule) { 
+      if let dept = departmentByName(context, name: $1) {
+        $0.department = dept
+        dept.mutableSetValueForKey("employees").addObject($0)
+      }
+    }
+}
+
+func departmentRule(context: NSManagedObjectContext) -> ClassRule<Department> {
+  return ClassRule(createDepartment(context))
+    .expect("name", StringRule) { $0.name = $1 }
+}
+```
+And now the validation is trivial:
+```swift
+  try departmentRule(context).validate(deptJson) // here we have Department with name "Marketing" created
+  try employeeRule(context).validate(employeeJson) // here we have Employee mapped to corresponding Department
+```
+
 ### Extensibility
 You can add your own rule to the system. All you need for that is to conform to very simple ```Rule``` protocol:
 ```swift
@@ -136,11 +202,11 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.2.0'
+  pod 'Bender', '~> 1.2.2'
 ```
 **Carthage:**
 ```
-github "ptiz/Bender" == 1.2.0
+github "ptiz/Bender" == 1.2.2
 ```
 
 **Manual:**
