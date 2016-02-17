@@ -259,9 +259,15 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
+        mandatoryRules.append((name, storeRule(name, rule, bind)))
+        mandatoryDumpRules.append((name, storeDumpRule(name, rule, dump)))
+        return self
+    }
+    
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
         mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, { struc in return try rule.dump(dump(struc)) }))
+        mandatoryDumpRules.append((name, storeDumpRule(name, rule, dump)))
         return self
     }
     
@@ -364,6 +370,19 @@ public class CompoundRule<T, RefT>: Rule {
             } else {
                 try rule.validate(json)
             }
+        }
+    }
+    
+    private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
+        return { struc in return try rule.dump(dump(struc)) }
+    }
+
+    private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
+        return { struc in
+            if let v = dump(struc) {
+                return try rule.dump(v)
+            }
+            return NSNull()
         }
     }
     
