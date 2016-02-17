@@ -181,6 +181,21 @@ class BenderInTests: QuickSpec {
                     expect(error.description).to(equal("Requirement was not met for field \"age\" with value \"37.5\""))
                     })                
             }
+            
+            it("should be able to work with tuples") {
+                
+                let jsonObject = jsonFromFile("basic_test")
+                
+                let rule = StructRule(ref(("", 0)))
+                    .expect("name", StringRule) { $0.value.0 = $1 }
+                    .expect("age", IntRule) { $0.value.1 = $1 }
+                
+                let tuple = try! rule.validate(jsonObject)
+                
+                expect(tuple.0).to(equal("John"))
+                expect(tuple.1).to(equal(37))
+            }
+            
         }
         
         describe("Array validation") {
