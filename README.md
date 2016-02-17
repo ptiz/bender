@@ -123,6 +123,16 @@ Swift structs also supported as bindable items. For example, if our ```Folder```
 ```
 Have you noticed additional ```ref```? It is boxing object that allows us to pass the struct copied by value as reference through the rule set during validation. Also in our bind closures we should unbox it by calling ```$0.value``` which returns mutable Folder struct.
 
+You can even bind JSON structs into tuples! Use for that the StructRule as well:
+```swift
+  let folderRule = StructRule(ref(("", 0)))
+    .expect("title", StringRule, { $0.value.0 = $1 }) { $0.0 }
+    .expect("size", Int64Rule, { $0.value.1 = $1 }) { $0.1 }
+  
+  let newJson = try folderRule.dump(("home dir", 512))
+  let tuple = try folderRule.validate(json) // 'tuple' will be of type (String, Int64)
+```
+
 ### Core Data
 Your managed objects can be easily mapped as well. Let's imagine beloved Employee/Department scheme, but a bit more complicated than usual: Employee and Departments are linked by weak identifier, department name.
 
