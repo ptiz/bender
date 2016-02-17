@@ -41,7 +41,7 @@ extension Passports {
 }
 
 extension Passport {
-    convenience init(number: Int, issuedBy: String, valid: Bool) {
+    convenience init(number: Int?, issuedBy: String, valid: Bool) {
         self.init()
         self.issuedBy = issuedBy
         self.number = number
@@ -103,6 +103,33 @@ class BenderOutTests: QuickSpec {
                 
                 let folders = d["folders"] as! [AnyObject]
                 expect(folders.count).to(equal(2))
+            }
+            
+            it("should be able to dump 'null' values") {
+                let passportRule = ClassRule(Passport())
+                    .expect("issuedBy", StringRule) { $0.issuedBy }
+                    .expect("number", IntRule) { $0.number }
+                    .expect("valid", BoolRule) { $0.valid }
+                
+                let pass = Passport(number: nil, issuedBy: "One", valid: false)
+                
+                let passJson = try! passportRule.dump(pass)
+                
+                expect(passJson["issuedBy"]).to(equal("One"))
+                expect(passJson["number"]).to(beAKindOf(NSNull.self))
+            
+                let passString = try! StringifiedJSONRule(nestedRule: passportRule).dump(pass) as! String
+                
+                expect(passString).to(equal("{\"valid\":false,\"issuedBy\":\"One\",\"number\":null}"))
+            }
+            
+            it("should be able to work with tuples") {
+                let rule = StructRule(ref(("", 0)))
+                    .expect("name", StringRule) { $0.0 }
+                    .expect("number", IntRule) { $0.1 }
+                
+                let str = try! StringifiedJSONRule(nestedRule: rule).dump(("Test13", 13)) as! String
+                expect(str).to(equal("{\"number\":13,\"name\":\"Test13\"}"))
             }
         }
         
