@@ -1,0 +1,18 @@
+[
+
+{
+	"name": "John Doe",
+	"age": null,
+    "position": "DIRECTOR"
+},
+{
+	"name": "Alisa",
+    "position": "ENGINEER"
+},
+{
+	"name": "Bob",
+	"age": 37.8,
+    "position": "ASSISTANT"
+}
+
+]
