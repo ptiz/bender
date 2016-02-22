@@ -74,6 +74,17 @@ struct Folder {
     var folders: [Folder]?
 }
 
+enum AdminStaff {
+    case Engineer
+    case Other
+}
+
+class Employee {
+    var name: String?
+    var age: Double?
+    var position: AdminStaff?
+}
+
 class BenderInTests: QuickSpec {
     
     override func spec() {
@@ -81,7 +92,7 @@ class BenderInTests: QuickSpec {
         describe("Basic struct validation") {
             it("should perform nested struct validating and binding") {
                 
-                let jsonObject = jsonFromFile("basic_test")
+                let jsonData = dataFromFile("basic_test")
                 
                 let passportRule = ClassRule(Passport())
                     .expect("issuedBy", StringRule, { $0.issuedBy = $1 })
@@ -95,7 +106,7 @@ class BenderInTests: QuickSpec {
                     .optional("oldPass", passportRule, { $0.oldPass = $1 })
 
                 do {
-                    let person = try personRule.validate(jsonObject)
+                    let person = try personRule.validate(jsonData)
                     
                     expect(person).toNot(beNil())
                     
@@ -194,6 +205,23 @@ class BenderInTests: QuickSpec {
                 
                 expect(tuple.0).to(equal("John"))
                 expect(tuple.1).to(equal(37))
+            }
+            
+            it("should be able to provide default values for optionals") {
+
+                let jsonObject = jsonFromFile("defaults_test")
+                
+                let defaultValue = 13.13
+                
+                let employeeRule = ClassRule(Employee())
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .optional("age", DoubleRule, ifNotFound: defaultValue) { $0.age = $1 }
+                
+                let employee = try! ArrayRule(itemRule: employeeRule).validate(jsonObject)
+                
+                expect(employee[0].age).to(equal(defaultValue))
+                expect(employee[1].age).to(equal(defaultValue))
+                expect(employee[2].age).to(equal(37.8))
             }
             
         }
@@ -321,6 +349,26 @@ class BenderInTests: QuickSpec {
                     })
 
             }
+            
+            it("should be able to provide default value for unlisted items") {
+                
+                let jsonObject = jsonFromFile("defaults_test")
+                
+                let adminStaffRule = EnumRule(ifNotFound: AdminStaff.Other)
+                    .option("ENGINEER", .Engineer)
+                
+                let employeeRule = ClassRule(Employee())
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .optional("position", adminStaffRule) { $0.position = $1 }
+                
+                let employee = try! ArrayRule(itemRule: employeeRule).validate(jsonObject)
+                
+                expect(employee[0].position).to(equal(AdminStaff.Other))
+                expect(employee[1].position).to(equal(AdminStaff.Engineer))
+                expect(employee[2].position).to(equal(AdminStaff.Other))
+            }
+            
+            
         }
         
         describe("Stringified JSON validation") {
@@ -377,3 +425,8 @@ func jsonFromFile(name: String) -> AnyObject {
     let data = NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)!
     return try! NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
 }
+
+func dataFromFile(name: String) -> NSData? {
+    return NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)
+}
+

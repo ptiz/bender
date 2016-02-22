@@ -195,6 +195,7 @@ public class CompoundRule<T, RefT>: Rule {
     public typealias V = T
 
     typealias RuleClosure = (AnyObject, RefT) throws -> Void
+    typealias OptionalRuleClosure = (AnyObject?, RefT) throws -> Void
     typealias RequirementClosure = (AnyObject) throws -> Bool
     typealias DumpRuleClosure = (T) throws -> AnyObject
     typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
@@ -202,7 +203,7 @@ public class CompoundRule<T, RefT>: Rule {
     private var requirements = [(String, RequirementClosure)]()
     
     private var mandatoryRules = [(String, RuleClosure)]()
-    private var optionalRules = [(String, RuleClosure)]()
+    private var optionalRules = [(String, OptionalRuleClosure)]()
     
     private var mandatoryDumpRules = [(String, DumpRuleClosure)]()
     private var optionalDumpRules = [(String, DumpOptionalRuleClosure)]()
@@ -261,7 +262,7 @@ public class CompoundRule<T, RefT>: Rule {
      */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
         mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRule(name, rule, dump)))
+        mandatoryDumpRules.append((name, storeDumpRuleForseNull(name, rule, dump)))
         return self
     }
     
@@ -277,12 +278,14 @@ public class CompoundRule<T, RefT>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
+     - parameter ifNotFound: optional value of field type, i.e. R.V. It is being returned if provided in case if the
+        JSON field value is not found or is 'null'.     
      - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        optionalRules.append((name, storeRule(name, rule, bind)))
+    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void) -> Self {
+        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
         return self
     }
 
@@ -292,13 +295,15 @@ public class CompoundRule<T, RefT>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
+     - parameter ifNotFound: optional value of field type, i.e. R.V. It is being returned if provided in case if the 
+        JSON field value is not found or is 'null'.
      - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        optionalRules.append((name, storeRule(name, rule, bind)))
+    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
+        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
         optionalDumpRules.append((name, { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
@@ -373,16 +378,42 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
+    private func storeOptionalRule<R: Rule>(name: String, _ rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)? = nil) -> OptionalRuleClosure {
+        return { (optionalJson, struc) in
+            guard let json = optionalJson where !(json is NSNull) else {
+                if let v = ifNotFound, b = bind {
+                    b(struc, v)
+                }
+                return
+            }
+            
+            if let b = bind {
+                b(struc, try rule.validate(json))
+            } else {
+                try rule.validate(json)
+            }
+        }
+    }
+    
     private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
         return { struc in return try rule.dump(dump(struc)) }
     }
 
-    private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
+    private func storeDumpRuleForseNull<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
         return { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
             }
             return NSNull()
+        }
+    }
+    
+    private func storeDumpRule<R: Rule>(name: String, _ rule: R, ifNotFound defaultValue: R.V? = nil, _ dump: (T)->R.V?) -> DumpOptionalRuleClosure {
+        return { struc in
+            if let v = dump(struc) {
+                return try rule.dump(v)
+            }
+            return nil
         }
     }
     
@@ -422,15 +453,11 @@ public class CompoundRule<T, RefT>: Rule {
     
     private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
         for (name, rule) in optionalRules {
-            if let value = json[name] {
-                do {
-                    if value is NSNull {
-                        continue
-                    }
-                    try rule(value, newStruct)
-                } catch let err as RuleError {
-                    throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
-                }
+            let value = json[name]
+            do {
+                try rule(value, newStruct)
+            } catch let err as RuleError {
+                throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
             }
         }
     }
@@ -563,8 +590,17 @@ public class EnumRule<T: Equatable>: Rule {
     
     private var cases: [(AnyObject) throws -> T?] = []
     private var reverseCases: [(T) throws -> AnyObject?] = []
+    private var byDefault: V?
     
-    public init() {
+    /**
+     Initializer for EnumRule.
+     
+     - parameter byDefault: optional parameter of type V, which is being returned if provided, 
+        in case if no matches found during validation in options list for the particular JSON value.
+        Do not pass it to the 'dump', it will throw.
+     */
+    public init(ifNotFound byDefault: V? = nil) {
+        self.byDefault = byDefault
     }
     
     /**
@@ -609,6 +645,10 @@ public class EnumRule<T: Equatable>: Rule {
             }
         }
         
+        if let byDefault = self.byDefault {
+            return byDefault
+        }
+        
         throw RuleError.ExpectedNotFound("Unable to validate enum \(T.self). Unexpected enum case found: \"\(jsonValue)\".", nil)
     }
     
@@ -632,7 +672,7 @@ public class EnumRule<T: Equatable>: Rule {
             }
         }
         
-        throw RuleError.ExpectedNotFound("Unable to dump enum \(T.self). Unexpected enum case found: \"\(value)\".", nil)
+        throw RuleError.ExpectedNotFound("Unable to dump enum \(T.self). Unexpected enum case given: \"\(value)\".", nil)
     }
 }
 
@@ -739,5 +779,37 @@ func toAny<T>(t: T) throws -> AnyObject {
     case let v as String: return v
     default:
         throw RuleError.InvalidDump("Unable to dump value of unknown type: \(t)", nil)
+    }
+}
+
+// MARK: - Helpers
+
+extension Rule {
+    func validate(jsonData: NSData?) throws -> V {
+        do {
+            guard let data = jsonData else {
+                throw RuleError.ExpectedNotFound("Unable to get JSON object: no data found.", nil)
+            }
+            return try validate(try NSJSONSerialization.JSONObjectWithData(data, options: []))
+        } catch let error as NSError {
+            throw RuleError.InvalidJSONSerialization("Unable to get JSON from data given", error)
+        }
+    }
+    
+    /**
+     This method exists just to remove ambiguity between 'validate(NSData?) and validate(AnyObject)'
+     */
+    func validate(jsonData: NSData) throws -> V {
+        let data: NSData? = jsonData
+        return try validate(data)
+    }
+    
+    func dump(value: V) throws -> NSData {
+        do {
+            return try NSJSONSerialization.dataWithJSONObject(try dump(value), options: NSJSONWritingOptions(rawValue: 0))
+        } catch let error as NSError {
+            let cause = RuleError.InvalidJSONSerialization("Could not convert JSON object to data.", error)
+            throw RuleError.InvalidDump("Unable to dump value \(value) to JSON data.", cause)
+        }
     }
 }
