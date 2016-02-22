@@ -74,9 +74,15 @@ struct Folder {
     var folders: [Folder]?
 }
 
+enum AdminStaff {
+    case Engineer
+    case Other
+}
+
 class Employee {
     var name: String?
     var age: Double?
+    var position: AdminStaff?
 }
 
 class BenderInTests: QuickSpec {
@@ -343,6 +349,26 @@ class BenderInTests: QuickSpec {
                     })
 
             }
+            
+            it("should be able to provide default value for unlisted items") {
+                
+                let jsonObject = jsonFromFile("defaults_test")
+                
+                let adminStaffRule = EnumRule(ifNotFound: AdminStaff.Other)
+                    .option("ENGINEER", .Engineer)
+                
+                let employeeRule = ClassRule(Employee())
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .optional("position", adminStaffRule) { $0.position = $1 }
+                
+                let employee = try! ArrayRule(itemRule: employeeRule).validate(jsonObject)
+                
+                expect(employee[0].position).to(equal(AdminStaff.Other))
+                expect(employee[1].position).to(equal(AdminStaff.Engineer))
+                expect(employee[2].position).to(equal(AdminStaff.Other))
+            }
+            
+            
         }
         
         describe("Stringified JSON validation") {

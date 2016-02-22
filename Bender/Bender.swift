@@ -278,6 +278,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
+     - parameter ifNotFound: optional value of field type, i.e. R.V. It is being returned if provided in case if the
+        JSON field value is not found or is 'null'.     
      - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      
      - returns: returns self for field declaration chaining
@@ -293,6 +295,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
+     - parameter ifNotFound: optional value of field type, i.e. R.V. It is being returned if provided in case if the 
+        JSON field value is not found or is 'null'.
      - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
      - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
      
@@ -586,8 +590,17 @@ public class EnumRule<T: Equatable>: Rule {
     
     private var cases: [(AnyObject) throws -> T?] = []
     private var reverseCases: [(T) throws -> AnyObject?] = []
+    private var byDefault: V?
     
-    public init() {
+    /**
+     Initializer for EnumRule.
+     
+     - parameter byDefault: optional parameter of type V, which is being returned if provided, 
+        in case if no matches found during validation in options list for the particular JSON value.
+        Do not pass it to the 'dump', it will throw.
+     */
+    public init(ifNotFound byDefault: V? = nil) {
+        self.byDefault = byDefault
     }
     
     /**
@@ -632,6 +645,10 @@ public class EnumRule<T: Equatable>: Rule {
             }
         }
         
+        if let byDefault = self.byDefault {
+            return byDefault
+        }
+        
         throw RuleError.ExpectedNotFound("Unable to validate enum \(T.self). Unexpected enum case found: \"\(jsonValue)\".", nil)
     }
     
@@ -655,7 +672,7 @@ public class EnumRule<T: Equatable>: Rule {
             }
         }
         
-        throw RuleError.ExpectedNotFound("Unable to dump enum \(T.self). Unexpected enum case found: \"\(value)\".", nil)
+        throw RuleError.ExpectedNotFound("Unable to dump enum \(T.self). Unexpected enum case given: \"\(value)\".", nil)
     }
 }
 
