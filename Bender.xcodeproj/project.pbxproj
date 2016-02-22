@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		45AB6AA5124B320B85642C6E /* Pods_BenderTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */; };
 		5B05ABA91C54F71100339915 /* BenderOutputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B05ABA81C54F71100339915 /* BenderOutputTests.swift */; };
+		5B3C4B3E1C7A6A070032BA13 /* defaults_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */; };
 		5B54EF0B1C3A90AE0072B2A8 /* Bender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B54EF001C3A90AE0072B2A8 /* Bender.framework */; };
 		5B54EF101C3A90AE0072B2A8 /* BenderInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF0F1C3A90AE0072B2A8 /* BenderInputTests.swift */; };
 		5B54EF1B1C3A90FD0072B2A8 /* Bender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF1A1C3A90FD0072B2A8 /* Bender.swift */; };
@@ -34,6 +35,7 @@
 /* Begin PBXFileReference section */
 		1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BenderTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B05ABA81C54F71100339915 /* BenderOutputTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BenderOutputTests.swift; sourceTree = "<group>"; };
+		5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = defaults_test.json; sourceTree = "<group>"; };
 		5B54EF001C3A90AE0072B2A8 /* Bender.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Bender.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B54EF051C3A90AE0072B2A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5B54EF0A1C3A90AE0072B2A8 /* BenderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -121,6 +123,7 @@
 				5BAEB50D1C47BE1F0044C0A7 /* stringified_test.json */,
 				5BAEB50F1C47C5000044C0A7 /* stringified_negative_test.json */,
 				5BAEB5111C47D0480044C0A7 /* recursive_test.json */,
+				5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */,
 			);
 			path = BenderTests;
 			sourceTree = "<group>";
@@ -235,6 +238,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5BAEB50E1C47BE1F0044C0A7 /* stringified_test.json in Resources */,
+				5B3C4B3E1C7A6A070032BA13 /* defaults_test.json in Resources */,
 				5B54EF1D1C3D38A60072B2A8 /* basic_test.json in Resources */,
 				5B54EF1F1C3D39DB0072B2A8 /* array_test.json in Resources */,
 				5BAEB5121C47D0480044C0A7 /* recursive_test.json in Resources */,

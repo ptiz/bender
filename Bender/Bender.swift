@@ -195,6 +195,7 @@ public class CompoundRule<T, RefT>: Rule {
     public typealias V = T
 
     typealias RuleClosure = (AnyObject, RefT) throws -> Void
+    typealias OptionalRuleClosure = (AnyObject?, RefT) throws -> Void
     typealias RequirementClosure = (AnyObject) throws -> Bool
     typealias DumpRuleClosure = (T) throws -> AnyObject
     typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
@@ -202,7 +203,7 @@ public class CompoundRule<T, RefT>: Rule {
     private var requirements = [(String, RequirementClosure)]()
     
     private var mandatoryRules = [(String, RuleClosure)]()
-    private var optionalRules = [(String, RuleClosure)]()
+    private var optionalRules = [(String, OptionalRuleClosure)]()
     
     private var mandatoryDumpRules = [(String, DumpRuleClosure)]()
     private var optionalDumpRules = [(String, DumpOptionalRuleClosure)]()
@@ -261,7 +262,7 @@ public class CompoundRule<T, RefT>: Rule {
      */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
         mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRule(name, rule, dump)))
+        mandatoryDumpRules.append((name, storeDumpRuleForseNull(name, rule, dump)))
         return self
     }
     
@@ -281,8 +282,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        optionalRules.append((name, storeRule(name, rule, bind)))
+    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void) -> Self {
+        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
         return self
     }
 
@@ -297,8 +298,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        optionalRules.append((name, storeRule(name, rule, bind)))
+    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
+        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
         optionalDumpRules.append((name, { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
@@ -373,16 +374,42 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
+    private func storeOptionalRule<R: Rule>(name: String, _ rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)? = nil) -> OptionalRuleClosure {
+        return { (optionalJson, struc) in
+            guard let json = optionalJson where !(json is NSNull) else {
+                if let v = ifNotFound, b = bind {
+                    b(struc, v)
+                }
+                return
+            }
+            
+            if let b = bind {
+                b(struc, try rule.validate(json))
+            } else {
+                try rule.validate(json)
+            }
+        }
+    }
+    
     private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
         return { struc in return try rule.dump(dump(struc)) }
     }
 
-    private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
+    private func storeDumpRuleForseNull<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
         return { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
             }
             return NSNull()
+        }
+    }
+    
+    private func storeDumpRule<R: Rule>(name: String, _ rule: R, ifNotFound defaultValue: R.V? = nil, _ dump: (T)->R.V?) -> DumpOptionalRuleClosure {
+        return { struc in
+            if let v = dump(struc) {
+                return try rule.dump(v)
+            }
+            return nil
         }
     }
     
@@ -422,15 +449,11 @@ public class CompoundRule<T, RefT>: Rule {
     
     private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
         for (name, rule) in optionalRules {
-            if let value = json[name] {
-                do {
-                    if value is NSNull {
-                        continue
-                    }
-                    try rule(value, newStruct)
-                } catch let err as RuleError {
-                    throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
-                }
+            let value = json[name]
+            do {
+                try rule(value, newStruct)
+            } catch let err as RuleError {
+                throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
             }
         }
     }

@@ -74,6 +74,11 @@ struct Folder {
     var folders: [Folder]?
 }
 
+class Employee {
+    var name: String?
+    var age: Double?
+}
+
 class BenderInTests: QuickSpec {
     
     override func spec() {
@@ -194,6 +199,23 @@ class BenderInTests: QuickSpec {
                 
                 expect(tuple.0).to(equal("John"))
                 expect(tuple.1).to(equal(37))
+            }
+            
+            it("should be able to provide default values for optionals") {
+
+                let jsonObject = jsonFromFile("defaults_test")
+                
+                let defaultValue = 13.13
+                
+                let employeeRule = ClassRule(Employee())
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .optional("age", DoubleRule, ifNotFound: defaultValue) { $0.age = $1 }
+                
+                let employee = try! ArrayRule(itemRule: employeeRule).validate(jsonObject)
+                
+                expect(employee[0].age).to(equal(defaultValue))
+                expect(employee[1].age).to(equal(defaultValue))
+                expect(employee[2].age).to(equal(37.8))
             }
             
         }
