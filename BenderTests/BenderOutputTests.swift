@@ -75,7 +75,7 @@ class BenderOutTests: QuickSpec {
                         Folder(name: "Folder 22", size: 12, folders: nil)
                     ])
                 
-                let d = try! folderRule.dump(f)
+                let d: NSData = try! folderRule.dump(f)
                 let newF = try! folderRule.validate(d)
                 
                 expect(newF.name).to(equal("Folder 1"))

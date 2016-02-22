@@ -781,3 +781,35 @@ func toAny<T>(t: T) throws -> AnyObject {
         throw RuleError.InvalidDump("Unable to dump value of unknown type: \(t)", nil)
     }
 }
+
+// MARK: - Helpers
+
+extension Rule {
+    func validate(jsonData: NSData?) throws -> V {
+        do {
+            guard let data = jsonData else {
+                throw RuleError.ExpectedNotFound("Unable to get JSON object: no data found.", nil)
+            }
+            return try validate(try NSJSONSerialization.JSONObjectWithData(data, options: []))
+        } catch let error as NSError {
+            throw RuleError.InvalidJSONSerialization("Unable to get JSON from data given", error)
+        }
+    }
+    
+    /**
+     This method exists just to remove ambiguity between 'validate(NSData?) and validate(AnyObject)'
+     */
+    func validate(jsonData: NSData) throws -> V {
+        let data: NSData? = jsonData
+        return try validate(data)
+    }
+    
+    func dump(value: V) throws -> NSData {
+        do {
+            return try NSJSONSerialization.dataWithJSONObject(try dump(value), options: NSJSONWritingOptions(rawValue: 0))
+        } catch let error as NSError {
+            let cause = RuleError.InvalidJSONSerialization("Could not convert JSON object to data.", error)
+            throw RuleError.InvalidDump("Unable to dump value \(value) to JSON data.", cause)
+        }
+    }
+}
