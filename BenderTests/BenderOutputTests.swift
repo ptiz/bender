@@ -138,7 +138,8 @@ class BenderOutTests: QuickSpec {
                 
                 let passportRule = ClassRule(Passport())
                     .expect("issuedBy", StringRule, { $0.issuedBy = $1 }) { $0.issuedBy }
-                    .optional("number", IntRule, { $0.number = $1 }) { $0.number }
+                    .optional("number", IntRule) { $0.number = $1 }
+                    .expect("number", IntRule) { $0.number }
                     .expect("valid", BoolRule, { $0.valid = $1 }) { $0.valid }
                 
                 let passportArrayRule = ArrayRule(itemRule: passportRule)

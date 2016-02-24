@@ -34,8 +34,8 @@ import Nimble
 
 class Passport {
     var number: Int?
-    var issuedBy: String! = nil
-    var valid: Bool = true
+    var issuedBy: String!
+    var valid: Bool!
 }
 
 class Person {

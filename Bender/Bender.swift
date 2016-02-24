@@ -245,7 +245,7 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        mandatoryRules.append((name, storeRule(name, rule, bind)))
+        mandatoryRules.append((name, storeRule(rule, bind)))
         return self
     }
 
@@ -260,15 +260,25 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRuleForseNull(name, rule, dump)))
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+        mandatoryRules.append((name, storeRule(rule, bind)))
+        mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
         return self
     }
     
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
-        mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRule(name, rule, dump)))
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
+        mandatoryRules.append((name, storeRule(rule, bind)))
+        mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
+        return self
+    }
+    
+    public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
+        mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
+        return self
+    }
+    
+    public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V) -> Self {
+        mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -285,7 +295,7 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void) -> Self {
-        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
+        optionalRules.append((name, storeOptionalRule(rule, ifNotFound, bind)))
         return self
     }
 
@@ -302,14 +312,14 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
-        optionalDumpRules.append((name, { struc in
-            if let v = dump(struc) {
-                return try rule.dump(v)
-            }
-            return nil
-        }))
+    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+        optionalRules.append((name, storeOptionalRule(rule, ifNotFound, bind)))
+        optionalDumpRules.append((name, storeDumpRule(rule, dump)))
+        return self
+    }
+    
+    public func optional<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
+        optionalDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -368,7 +378,7 @@ public class CompoundRule<T, RefT>: Rule {
     
     //MARK: - implementation
     
-    private func storeRule<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
+    private func storeRule<R: Rule>(rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
         return { (json, struc) in
             if let b = bind {
                 b(struc, try rule.validate(json))
@@ -378,7 +388,7 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func storeOptionalRule<R: Rule>(name: String, _ rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)? = nil) -> OptionalRuleClosure {
+    private func storeOptionalRule<R: Rule>(rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)?) -> OptionalRuleClosure {
         return { (optionalJson, struc) in
             guard let json = optionalJson where !(json is NSNull) else {
                 if let v = ifNotFound, b = bind {
@@ -395,11 +405,11 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
+    private func storeDumpRule<R: Rule>(rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
         return { struc in return try rule.dump(dump(struc)) }
     }
 
-    private func storeDumpRuleForseNull<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
+    private func storeDumpRuleForseNull<R: Rule>(rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
         return { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
@@ -408,7 +418,7 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func storeDumpRule<R: Rule>(name: String, _ rule: R, ifNotFound defaultValue: R.V? = nil, _ dump: (T)->R.V?) -> DumpOptionalRuleClosure {
+    private func storeDumpRule<R: Rule>(rule: R, _ dump: (T)->R.V?) -> DumpOptionalRuleClosure {
         return { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
