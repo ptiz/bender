@@ -251,12 +251,12 @@ public class CompoundRule<T, RefT>: Rule {
 
     /**
      Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
-     an error will be thrown. Allows to provide optional bind and dump closures.
+     an error will be thrown.
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
      - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
-     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of validated field type
      
      - returns: returns self for field declaration chaining
      */
@@ -265,18 +265,49 @@ public class CompoundRule<T, RefT>: Rule {
         mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
         return self
     }
-    
+
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
         mandatoryRules.append((name, storeRule(rule, bind)))
         mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
     }
     
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
     public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
         mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
         return self
     }
     
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
     public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V) -> Self {
         mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
@@ -301,7 +332,7 @@ public class CompoundRule<T, RefT>: Rule {
 
     /**
      Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
-     nothing happens.  Allows to provide optional bind and dump closures.
+     nothing happens.
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
@@ -318,6 +349,16 @@ public class CompoundRule<T, RefT>: Rule {
         return self
     }
     
+    /**
+     Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
+     nothing happens.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of R.V field type
+     
+     - returns: returns self for field declaration chaining
+     */
     public func optional<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
         optionalDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
@@ -535,10 +576,12 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
     private var itemRule: R
     private var invalidItemHandler: InvalidItemHandler = { throw $0 }
     
-    /**
+     /**
      Validator initializer
      
      - parameter itemRule: rule for validating array items of type R.V
+     - parameter invalidItemHandler: handler closure which is called when the item cannnot be validated.
+        Can throw is there is no need to keep checking.
      */
     public init(itemRule: R, invalidItemHandler: InvalidItemHandler? = nil) {
         self.itemRule = itemRule
