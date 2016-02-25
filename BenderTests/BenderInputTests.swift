@@ -292,9 +292,29 @@ class BenderInTests: QuickSpec {
                     })
             }
             
+            it("should not throw if non-throwable invalidItemHandler is given") {
+                let jsonObject = jsonFromFile("array_skip_test")
+                
+                let passportRule = ClassRule(Passport())
+                    .optional("issuedBy", StringRule) { $0.issuedBy = $1 }
+                    .expect("number", IntRule) { $0.number = $1 }
+                
+                let passportArrayRule = ArrayRule(itemRule: passportRule) {
+                        print("Error: \($0)")
+                    }
+                
+                let passportsRule = StructRule(ref([Passport]()))
+                    .expect("passports", passportArrayRule, { $0.value = $1 })
+                
+                expect{ try passportsRule.validate(jsonObject) }.toNot(throwError(RuleError.InvalidJSONType("", nil)))
+                
+                let objects = try? passportsRule.validate(jsonObject)
+                expect(objects?.count).to(equal(2))
+            }
+            
         }
         
-        describe("Enum validtion") {
+        describe("Enum validation") {
             it("should performs enum validation of any internal type") {
                 
                 let jsonObject = jsonFromFile("enum_test")

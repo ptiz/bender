@@ -530,16 +530,21 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
     public typealias V = [T]
 
     typealias ValidateClosure = (AnyObject) throws -> T
+    public typealias InvalidItemHandler = (ErrorType) throws -> Void
     
     private var itemRule: R
+    private var invalidItemHandler: InvalidItemHandler = { throw $0 }
     
     /**
      Validator initializer
      
      - parameter itemRule: rule for validating array items of type R.V
      */
-    public init(itemRule: R) {
+    public init(itemRule: R, invalidItemHandler: InvalidItemHandler? = nil) {
         self.itemRule = itemRule
+        if let handler = invalidItemHandler {
+            self.invalidItemHandler = handler
+        }
     }
     
     /**
@@ -557,15 +562,21 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
         }
         
         var newArray = [T]()
-        
-        for (index, object) in json.enumerate() {
-            do {
-                newArray.append(try itemRule.validate(object))
-            } catch let err as RuleError {
-                throw RuleError.InvalidJSONType("Unable to validate array of \(T.self): item #\(index) could not be validated.", err)
+        var index: Int = 0
+  
+        do {
+            for (i, object) in json.enumerate() {
+                do {
+                    newArray.append(try itemRule.validate(object))
+                } catch let handlerError {
+                    index = i
+                    try invalidItemHandler(handlerError)
+                }
             }
+        } catch let err as RuleError {
+            throw RuleError.InvalidJSONType("Unable to validate array of \(T.self): item #\(index) could not be validated.", err)
         }
-        
+    
         return newArray
     }
     
