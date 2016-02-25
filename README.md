@@ -1,12 +1,12 @@
 # Bender
 [![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.2.5-brightgreen.svg)]()
 
-Not just yet another JSON mapping framework for Swift, but tool for validating and binding JSON structures to your models.
+Not just yet another JSON mapping framework for Swift, but tool for building rules for JSON structures validating and binding to your data types.
 
 Bender
+- focuses on JSON data describing, much like JSON schema does;
 - does not require your model classes to inherit from any library roots;
 - type-safe;
-- focuses on JSON data describing, not your classes;
 - supports mandatory/optional fields checking with error throwing;
 - does not require exact field naming or even field existence;
 - supports classes/structs with all JSON natural field types, nested/recursively nested ones, arrays as class/struct fields or JSON root ones, custom enums, 'stringified' JSON;
@@ -42,7 +42,7 @@ How could we check if we got the proper data? Bender helps us to describe our ex
     .expect("title", StringRule) { $0.name = $1 }
     .expect("size", Int64Rule) { $0.size = $1 }
 ```
-What does it mean? We literally created a _rule_, that describes what we expect in our JSON: a struct with two mandatory fields, one of them is String and named "title", another is Int64 and named "size". But after all we want to _bind_ values that can be extracted from these fields into fields of a corresponding class Folder. 
+What does it mean? We literally created a _rule_, a schema that describes what we expect in our JSON: a struct with two mandatory fields, one of them is String and named "title", another is Int64 and named "size". But after all we want to _bind_ values that can be extracted from these fields into fields of a corresponding class Folder. 
 
 ClassRule gets ```@autoclosure``` that constructs new Folder object each time we are going to validate corresponding JSON fragment.
 
