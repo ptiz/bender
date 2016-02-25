@@ -1,0 +1,16 @@
+{
+  "passports": [
+    {
+      "number": 111,
+      "issuedBy": "FMS1"
+    },
+    {
+      "number": 222,
+      "issuedBy": 12
+    },
+    {
+      "number": 333,
+      "issuedBy": null
+    }
+  ]
+}

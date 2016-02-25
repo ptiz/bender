@@ -34,8 +34,8 @@ import Nimble
 
 class Passport {
     var number: Int?
-    var issuedBy: String! = nil
-    var valid: Bool = true
+    var issuedBy: String!
+    var valid: Bool!
 }
 
 class Person {
@@ -106,7 +106,7 @@ class BenderInTests: QuickSpec {
                     .optional("oldPass", passportRule, { $0.oldPass = $1 })
 
                 do {
-                    let person = try personRule.validate(jsonData)
+                    let person = try personRule.validateData(jsonData)
                     
                     expect(person).toNot(beNil())
                     
@@ -162,7 +162,9 @@ class BenderInTests: QuickSpec {
 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
-                        expect(error.description).to(equal("Unable to validate mandatory field \"passport\" for Person.\nUnable to validate \"[\"valid\": 1, \"issuedBy\": FMS, \"number\": 123]\" as Passport. Mandatory field \"issued\" not found in struct."))
+                        let stack = error.unwindStack()
+                        expect(stack.count).to(equal(2))
+                        expect("\(stack[1])").to(contain("Mandatory field \"issued\" not found in struct."))
                     })
             }
             
@@ -288,13 +290,35 @@ class BenderInTests: QuickSpec {
                 
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
-                        expect(error.description).to(equal("Unable to validate mandatory field \"passports\" for Passports.\nUnable to validate array of Passport: item #0 could not be validated.\nUnable to validate \"[\"issuedBy\": FMS1, \"number\": 111]\" as Passport. Mandatory field \"numberX\" not found in struct."))
+                        let stack = error.unwindStack()
+                        expect(stack.count).to(equal(3))
+                        expect("\(stack[2])").to(contain("Mandatory field \"numberX\" not found in struct."))                    
                     })
+            }
+            
+            it("should not throw if non-throwable invalidItemHandler is given") {
+                let jsonObject = jsonFromFile("array_skip_test")
+                
+                let passportRule = ClassRule(Passport())
+                    .optional("issuedBy", StringRule) { $0.issuedBy = $1 }
+                    .expect("number", IntRule) { $0.number = $1 }
+                
+                let passportArrayRule = ArrayRule(itemRule: passportRule) {
+                        print("Error: \($0)")
+                    }
+                
+                let passportsRule = StructRule(ref([Passport]()))
+                    .expect("passports", passportArrayRule, { $0.value = $1 })
+                
+                expect{ try passportsRule.validate(jsonObject) }.toNot(throwError(RuleError.InvalidJSONType("", nil)))
+                
+                let objects = try? passportsRule.validate(jsonObject)
+                expect(objects?.count).to(equal(2))
             }
             
         }
         
-        describe("Enum validtion") {
+        describe("Enum validation") {
             it("should performs enum validation of any internal type") {
                 
                 let jsonObject = jsonFromFile("enum_test")
@@ -413,7 +437,9 @@ class BenderInTests: QuickSpec {
                 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
-                    expect(error.description).to(equal("Unable to validate mandatory field \"passport\" for Person.\nUnable to parse stringified JSON: {\"number\": 123 \"issuedBy\": \"FMS\", \"valid\": true}.\nBadly formed object around character 15."))
+                        let stack = error.unwindStack()
+                        expect(stack.count).to(equal(2))
+                        expect("\(stack[1])").to(contain("Badly formed object around character 15."))                    
                     })
 
             }
