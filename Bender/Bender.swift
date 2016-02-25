@@ -57,6 +57,21 @@ public indirect enum RuleError: ErrorType, CustomStringConvertible {
         }
     }
     
+    public func unwindStack() -> [ErrorType] {
+        switch self {
+        case InvalidJSONType(_, let cause):
+            return causeStack(cause)
+        case .ExpectedNotFound(_, let cause):
+            return causeStack(cause)
+        case .InvalidJSONSerialization:
+            return [self]
+        case .InvalidDump(_, let cause):
+            return causeStack(cause)
+        case .UnmetRequirement(_, let cause):
+            return causeStack(cause)
+        }
+    }
+    
     private func descr(cause: RuleError?, _ msg: String) -> String {
         if let causeDescr = cause?.description {
             return "\(msg)\n\(causeDescr)"
@@ -70,6 +85,11 @@ public indirect enum RuleError: ErrorType, CustomStringConvertible {
         }
         let errorDescription = "\n\((error.userInfo["NSDebugDescription"] ?? error.description)!)"
         return "\(msg)\(errorDescription)"
+    }
+    
+    private func causeStack(cause: RuleError?) -> [ErrorType] {
+        guard let stack = cause?.unwindStack() else { return [self] }
+        return [self] + stack
     }
 }
 
@@ -245,13 +265,30 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        mandatoryRules.append((name, storeRule(name, rule, bind)))
+        mandatoryRules.append((name, storeRule(rule, bind)))
         return self
     }
 
     /**
      Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
-     an error will be thrown. Allows to provide optional bind and dump closures.
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+        mandatoryRules.append((name, storeRule(rule, bind)))
+        mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
+        return self
+    }
+
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
@@ -260,15 +297,39 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRuleForseNull(name, rule, dump)))
+    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
+        mandatoryRules.append((name, storeRule(rule, bind)))
+        mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
     }
     
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V) -> Self {
-        mandatoryRules.append((name, storeRule(name, rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRule(name, rule, dump)))
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
+        mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
+        return self
+    }
+    
+    /**
+     Method for declaring mandatory field expected in a JSON dictionary. If the field is not found during validation,
+     an error will be thrown.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V) -> Self {
+        mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -285,13 +346,13 @@ public class CompoundRule<T, RefT>: Rule {
      - returns: returns self for field declaration chaining
      */
     public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void) -> Self {
-        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
+        optionalRules.append((name, storeOptionalRule(rule, ifNotFound, bind)))
         return self
     }
 
     /**
      Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
-     nothing happens.  Allows to provide optional bind and dump closures.
+     nothing happens.
      
      - parameter name: string name of the field
      - parameter rule: rule that should validate the value of the field
@@ -302,14 +363,24 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: ((RefT, R.V)->Void)? = nil, dump: (T)->R.V?) -> Self {
-        optionalRules.append((name, storeOptionalRule(name, rule, ifNotFound, bind)))
-        optionalDumpRules.append((name, { struc in
-            if let v = dump(struc) {
-                return try rule.dump(v)
-            }
-            return nil
-        }))
+    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+        optionalRules.append((name, storeOptionalRule(rule, ifNotFound, bind)))
+        optionalDumpRules.append((name, storeDumpRule(rule, dump)))
+        return self
+    }
+    
+    /**
+     Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
+     nothing happens.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of R.V field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    public func optional<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
+        optionalDumpRules.append((name, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -368,7 +439,7 @@ public class CompoundRule<T, RefT>: Rule {
     
     //MARK: - implementation
     
-    private func storeRule<R: Rule>(name: String, _ rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
+    private func storeRule<R: Rule>(rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
         return { (json, struc) in
             if let b = bind {
                 b(struc, try rule.validate(json))
@@ -378,7 +449,7 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func storeOptionalRule<R: Rule>(name: String, _ rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)? = nil) -> OptionalRuleClosure {
+    private func storeOptionalRule<R: Rule>(rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)?) -> OptionalRuleClosure {
         return { (optionalJson, struc) in
             guard let json = optionalJson where !(json is NSNull) else {
                 if let v = ifNotFound, b = bind {
@@ -395,11 +466,11 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func storeDumpRule<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
+    private func storeDumpRule<R: Rule>(rule: R, _ dump: (T)->R.V) -> DumpRuleClosure {
         return { struc in return try rule.dump(dump(struc)) }
     }
 
-    private func storeDumpRuleForseNull<R: Rule>(name: String, _ rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
+    private func storeDumpRuleForseNull<R: Rule>(rule: R, _ dump: (T)->R.V?) -> DumpRuleClosure {
         return { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
@@ -408,7 +479,7 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func storeDumpRule<R: Rule>(name: String, _ rule: R, ifNotFound defaultValue: R.V? = nil, _ dump: (T)->R.V?) -> DumpOptionalRuleClosure {
+    private func storeDumpRule<R: Rule>(rule: R, _ dump: (T)->R.V?) -> DumpOptionalRuleClosure {
         return { struc in
             if let v = dump(struc) {
                 return try rule.dump(v)
@@ -520,16 +591,23 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
     public typealias V = [T]
 
     typealias ValidateClosure = (AnyObject) throws -> T
+    public typealias InvalidItemHandler = (ErrorType) throws -> Void
     
     private var itemRule: R
+    private var invalidItemHandler: InvalidItemHandler = { throw $0 }
     
-    /**
+     /**
      Validator initializer
      
      - parameter itemRule: rule for validating array items of type R.V
+     - parameter invalidItemHandler: handler closure which is called when the item cannnot be validated.
+        Can throw is there is no need to keep checking.
      */
-    public init(itemRule: R) {
+    public init(itemRule: R, invalidItemHandler: InvalidItemHandler? = nil) {
         self.itemRule = itemRule
+        if let handler = invalidItemHandler {
+            self.invalidItemHandler = handler
+        }
     }
     
     /**
@@ -547,15 +625,21 @@ public class ArrayRule<T, R: Rule where R.V == T>: Rule {
         }
         
         var newArray = [T]()
-        
-        for (index, object) in json.enumerate() {
-            do {
-                newArray.append(try itemRule.validate(object))
-            } catch let err as RuleError {
-                throw RuleError.InvalidJSONType("Unable to validate array of \(T.self): item #\(index) could not be validated.", err)
+        var index: Int = 0
+  
+        do {
+            for (i, object) in json.enumerate() {
+                do {
+                    newArray.append(try itemRule.validate(object))
+                } catch let handlerError {
+                    index = i
+                    try invalidItemHandler(handlerError)
+                }
             }
+        } catch let err as RuleError {
+            throw RuleError.InvalidJSONType("Unable to validate array of \(T.self): item #\(index) could not be validated.", err)
         }
-        
+    
         return newArray
     }
     
@@ -784,8 +868,8 @@ func toAny<T>(t: T) throws -> AnyObject {
 
 // MARK: - Helpers
 
-extension Rule {
-    func validate(jsonData: NSData?) throws -> V {
+public extension Rule {
+    public func validateData(jsonData: NSData?) throws -> V {
         do {
             guard let data = jsonData else {
                 throw RuleError.ExpectedNotFound("Unable to get JSON object: no data found.", nil)
@@ -796,15 +880,7 @@ extension Rule {
         }
     }
     
-    /**
-     This method exists just to remove ambiguity between 'validate(NSData?) and validate(AnyObject)'
-     */
-    func validate(jsonData: NSData) throws -> V {
-        let data: NSData? = jsonData
-        return try validate(data)
-    }
-    
-    func dump(value: V) throws -> NSData {
+    public func dumpData(value: V) throws -> NSData {
         do {
             return try NSJSONSerialization.dataWithJSONObject(try dump(value), options: NSJSONWritingOptions(rawValue: 0))
         } catch let error as NSError {
