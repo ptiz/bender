@@ -162,7 +162,9 @@ class BenderInTests: QuickSpec {
 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
-                        expect(error.description).to(equal("Unable to validate mandatory field \"passport\" for Person.\nUnable to validate \"[\"valid\": 1, \"issuedBy\": FMS, \"number\": 123]\" as Passport. Mandatory field \"issued\" not found in struct."))
+                        let stack = error.unwindStack()
+                        expect(stack.count).to(equal(2))
+                        expect("\(stack[1])").to(contain("Mandatory field \"issued\" not found in struct."))
                     })
             }
             
@@ -288,7 +290,9 @@ class BenderInTests: QuickSpec {
                 
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
-                        expect(error.description).to(equal("Unable to validate mandatory field \"passports\" for Passports.\nUnable to validate array of Passport: item #0 could not be validated.\nUnable to validate \"[\"issuedBy\": FMS1, \"number\": 111]\" as Passport. Mandatory field \"numberX\" not found in struct."))
+                        let stack = error.unwindStack()
+                        expect(stack.count).to(equal(3))
+                        expect("\(stack[2])").to(contain("Mandatory field \"numberX\" not found in struct."))                    
                     })
             }
             
@@ -433,7 +437,9 @@ class BenderInTests: QuickSpec {
                 
                 expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
-                    expect(error.description).to(equal("Unable to validate mandatory field \"passport\" for Person.\nUnable to parse stringified JSON: {\"number\": 123 \"issuedBy\": \"FMS\", \"valid\": true}.\nBadly formed object around character 15."))
+                        let stack = error.unwindStack()
+                        expect(stack.count).to(equal(2))
+                        expect("\(stack[1])").to(contain("Badly formed object around character 15."))                    
                     })
 
             }

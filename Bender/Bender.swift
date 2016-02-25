@@ -57,6 +57,21 @@ public indirect enum RuleError: ErrorType, CustomStringConvertible {
         }
     }
     
+    public func unwindStack() -> [ErrorType] {
+        switch self {
+        case InvalidJSONType(_, let cause):
+            return causeStack(cause)
+        case .ExpectedNotFound(_, let cause):
+            return causeStack(cause)
+        case .InvalidJSONSerialization:
+            return [self]
+        case .InvalidDump(_, let cause):
+            return causeStack(cause)
+        case .UnmetRequirement(_, let cause):
+            return causeStack(cause)
+        }
+    }
+    
     private func descr(cause: RuleError?, _ msg: String) -> String {
         if let causeDescr = cause?.description {
             return "\(msg)\n\(causeDescr)"
@@ -70,6 +85,11 @@ public indirect enum RuleError: ErrorType, CustomStringConvertible {
         }
         let errorDescription = "\n\((error.userInfo["NSDebugDescription"] ?? error.description)!)"
         return "\(msg)\(errorDescription)"
+    }
+    
+    private func causeStack(cause: RuleError?) -> [ErrorType] {
+        guard let stack = cause?.unwindStack() else { return [self] }
+        return [self] + stack
     }
 }
 
