@@ -1,5 +1,5 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.2.4-brightgreen.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.2.5-brightgreen.svg)]()
 
 Not just yet another JSON mapping framework for Swift, but tool for validating and binding JSON structures to your models.
 
@@ -12,7 +12,7 @@ Bender
 - supports classes/structs with all JSON natural field types, nested/recursively nested ones, arrays as class/struct fields or JSON root ones, custom enums, 'stringified' JSON;
 - allows you to dump data structures using validation rules written once;
 - allows you to write your own validator/dumper in a couple of dozen lines;
-- small: ~350 loc in Swift.
+- small: ~500 loc in Swift.
 
 ### Example
 Let's assume we receive in JSON the struct like this:
@@ -212,11 +212,11 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.2.4'
+  pod 'Bender', '~> 1.2.5'
 ```
 **Carthage:**
 ```
-github "ptiz/Bender" == 1.2.4
+github "ptiz/Bender" == 1.2.5
 ```
 
 **Manual:**
