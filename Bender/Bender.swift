@@ -805,8 +805,8 @@ func toAny<T>(t: T) throws -> AnyObject {
 
 // MARK: - Helpers
 
-extension Rule {
-    func validate(jsonData: NSData?) throws -> V {
+public extension Rule {
+    public func validateData(jsonData: NSData?) throws -> V {
         do {
             guard let data = jsonData else {
                 throw RuleError.ExpectedNotFound("Unable to get JSON object: no data found.", nil)
@@ -817,15 +817,7 @@ extension Rule {
         }
     }
     
-    /**
-     This method exists just to remove ambiguity between 'validate(NSData?) and validate(AnyObject)'
-     */
-    func validate(jsonData: NSData) throws -> V {
-        let data: NSData? = jsonData
-        return try validate(data)
-    }
-    
-    func dump(value: V) throws -> NSData {
+    public func dumpData(value: V) throws -> NSData {
         do {
             return try NSJSONSerialization.dataWithJSONObject(try dump(value), options: NSJSONWritingOptions(rawValue: 0))
         } catch let error as NSError {

@@ -106,7 +106,7 @@ class BenderInTests: QuickSpec {
                     .optional("oldPass", passportRule, { $0.oldPass = $1 })
 
                 do {
-                    let person = try personRule.validate(jsonData)
+                    let person = try personRule.validateData(jsonData)
                     
                     expect(person).toNot(beNil())
                     
