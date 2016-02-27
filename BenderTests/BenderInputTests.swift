@@ -32,59 +32,6 @@ import Nimble
 
 @testable import Bender
 
-class Passport {
-    var number: Int?
-    var issuedBy: String!
-    var valid: Bool!
-}
-
-class Person {
-    var name: String! = nil
-    var age: Float! = nil
-    var passport: Passport! = nil
-    var oldPass: Passport?
-    var nested: [Passport] = []
-}
-
-class Passports {
-    var items: [Passport] = []
-    var numbers: [Int] = []
-}
-
-enum IssuedBy {
-    case Unknown
-    case FMS
-    case SMS
-    case OPG
-}
-
-enum Active {
-    case Active
-    case Inactive
-}
-
-struct Pass {
-    var issuedBy: IssuedBy = .Unknown
-    var active: Active = .Inactive
-}
-
-struct Folder {
-    var name: String
-    var size: Int64
-    var folders: [Folder]?
-}
-
-enum AdminStaff {
-    case Engineer
-    case Other
-}
-
-class Employee {
-    var name: String?
-    var age: Double?
-    var position: AdminStaff?
-}
-
 class BenderInTests: QuickSpec {
     
     override func spec() {
@@ -195,20 +142,6 @@ class BenderInTests: QuickSpec {
                     })                
             }
             
-            it("should be able to work with tuples") {
-                
-                let jsonObject = jsonFromFile("basic_test")
-                
-                let rule = StructRule(ref(("", 0)))
-                    .expect("name", StringRule) { $0.value.0 = $1 }
-                    .expect("age", IntRule) { $0.value.1 = $1 }
-                
-                let tuple = try! rule.validate(jsonObject)
-                
-                expect(tuple.0).to(equal("John"))
-                expect(tuple.1).to(equal(37))
-            }
-            
             it("should be able to provide default values for optionals") {
 
                 let jsonObject = jsonFromFile("defaults_test")
@@ -226,6 +159,48 @@ class BenderInTests: QuickSpec {
                 expect(employee[2].age).to(equal(37.8))
             }
             
+        }
+        
+        describe("Advanced struct validation") {
+            it("should be able to work with tuples") {
+                
+                let jsonObject = jsonFromFile("basic_test")
+                
+                let rule = StructRule(ref(("", 0)))
+                    .expect("name", StringRule) { $0.value.0 = $1 }
+                    .expect("age", IntRule) { $0.value.1 = $1 }
+                
+                let tuple = try! rule.validate(jsonObject)
+                
+                expect(tuple.0).to(equal("John"))
+                expect(tuple.1).to(equal(37))
+            }
+            
+            context("bind struct should not be created until the validation is complete") {
+                it("should not allow an object creation if a validation throws") {
+
+                    let jsonObject = jsonFromFile("basic_test")
+                    
+                    var creationCounter = 0
+                    TraceableObject.traceObjectCreation = { creationCounter += 1 }
+                    
+                    let rule = ClassRule(TraceableObject())
+                        .expect("name", StringRule) { $0.name = $1 }
+                    
+                    let obj = try? rule.validate(jsonObject)
+
+                    expect(obj).toNot(beNil())
+                    expect(creationCounter).to(equal(1))
+                    
+                    let ruleBreak = ClassRule(TraceableObject())
+                        .expect("nameError", StringRule) { $0.name = $1 }
+                    
+                    let objBreak = try? ruleBreak.validate(jsonObject)
+                    
+                    expect(objBreak).to(beNil())
+                    expect(creationCounter).to(equal(1))
+                }
+            }
         }
         
         describe("Array validation") {
@@ -456,3 +431,63 @@ func dataFromFile(name: String) -> NSData? {
     return NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)
 }
 
+class Passport {
+    var number: Int?
+    var issuedBy: String!
+    var valid: Bool!
+}
+
+class Person {
+    var name: String! = nil
+    var age: Float! = nil
+    var passport: Passport! = nil
+    var oldPass: Passport?
+    var nested: [Passport] = []
+}
+
+class Passports {
+    var items: [Passport] = []
+    var numbers: [Int] = []
+}
+
+enum IssuedBy {
+    case Unknown
+    case FMS
+    case SMS
+    case OPG
+}
+
+enum Active {
+    case Active
+    case Inactive
+}
+
+struct Pass {
+    var issuedBy: IssuedBy = .Unknown
+    var active: Active = .Inactive
+}
+
+struct Folder {
+    var name: String
+    var size: Int64
+    var folders: [Folder]?
+}
+
+enum AdminStaff {
+    case Engineer
+    case Other
+}
+
+class Employee {
+    var name: String?
+    var age: Double?
+    var position: AdminStaff?
+}
+
+class TraceableObject {
+    static var traceObjectCreation: (()->Void)?
+    init() {
+        TraceableObject.traceObjectCreation?()
+    }
+    var name: String!
+}
