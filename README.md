@@ -87,6 +87,7 @@ Compound rules:
 Rules with nested rules:
 - ArrayRule - bind array of ony other type, validated by item rule
 - StringifiedJSONRule - bind any rule from JSON encoded into UTF-8 string
+- ProxyRule - allows to bypass some intermediate JSON structs without validation and binding
 
 ### Error handling
 Bender throws RuleError enum in case of validating or dumping errors, which stores optional information about a cause of error. 
