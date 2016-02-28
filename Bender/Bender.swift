@@ -214,11 +214,12 @@ public let StringRule = TypeRule<String>()
 public class CompoundRule<T, RefT>: Rule {
     public typealias V = T
 
-    typealias RuleClosure = (AnyObject, RefT) throws -> Void
-    typealias OptionalRuleClosure = (AnyObject?, RefT) throws -> Void
-    typealias RequirementClosure = (AnyObject) throws -> Bool
-    typealias DumpRuleClosure = (T) throws -> AnyObject
-    typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
+    private typealias LateBindClosure = (RefT) -> Void
+    private typealias RuleClosure = (AnyObject) throws -> LateBindClosure?
+    private typealias OptionalRuleClosure = (AnyObject?) throws -> LateBindClosure?
+    private typealias RequirementClosure = (AnyObject) throws -> Bool
+    private typealias DumpRuleClosure = (T) throws -> AnyObject
+    private typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
     
     private var requirements = [(String, RequirementClosure)]()
     
@@ -385,7 +386,7 @@ public class CompoundRule<T, RefT>: Rule {
     }
     
     /**
-     Validates JSON dictionary and returns T value if succeeded. Validation throws if jsonValue is not a JSON dictionary or if any nested rule throws.
+     Validates JSON dictionary and returns T value if succeeded. Validation throws if jsonValue is not a JSON dictionary or if any nested rule throws. Object of type T will not be created if the validation fails.
      
      - parameter jsonValue: JSON dictionary to be validated and converted into T
      
@@ -400,10 +401,14 @@ public class CompoundRule<T, RefT>: Rule {
         
         try validateRequirements(json)
         
+        let mandatoryBindings = try validateMandatoryRules(json)
+        let optionalBindings = try validateOptionalRules(json)
+        
         let newStruct = factory()
         
-        try validateMandatoryRules(json, withNewStruct: newStruct)
-        try validateOptionalRules(json, withNewStruct: newStruct)
+        for binding in mandatoryBindings + optionalBindings {
+            binding(newStruct)
+        }
         
         return value(newStruct)
     }
@@ -440,29 +445,29 @@ public class CompoundRule<T, RefT>: Rule {
     //MARK: - implementation
     
     private func storeRule<R: Rule>(rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
-        return { (json, struc) in
+        return { (json) in
+            let v = try rule.validate(json)
             if let b = bind {
-                b(struc, try rule.validate(json))
-            } else {
-                try rule.validate(json)
+                return { b($0, v) }
             }
+            return nil
         }
     }
     
     private func storeOptionalRule<R: Rule>(rule: R, _ ifNotFound: R.V?, _ bind: ((RefT, R.V)->Void)?) -> OptionalRuleClosure {
-        return { (optionalJson, struc) in
+        return { (optionalJson) in
             guard let json = optionalJson where !(json is NSNull) else {
                 if let v = ifNotFound, b = bind {
-                    b(struc, v)
+                    return { b($0, v) }
                 }
-                return
+                return nil
             }
             
+            let v = try rule.validate(json)
             if let b = bind {
-                b(struc, try rule.validate(json))
-            } else {
-                try rule.validate(json)
+                return { b($0, v) }
             }
+            return nil
         }
     }
     
@@ -508,29 +513,33 @@ public class CompoundRule<T, RefT>: Rule {
         }
     }
     
-    private func validateMandatoryRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
+    private func validateMandatoryRules(json: [String: AnyObject]) throws -> [LateBindClosure] {
+        var bindings = [LateBindClosure]()
         for (name, rule) in mandatoryRules {
             guard let value = json[name] where !(value is NSNull) else {
                 throw RuleError.ExpectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
             }
             
             do {
-                try rule(value, newStruct)
+                if let binding = try rule(value) { bindings.append(binding) }
             } catch let err as RuleError {
                 throw RuleError.InvalidJSONType("Unable to validate mandatory field \"\(name)\" for \(T.self).", err)
             }
         }
+        return bindings
     }
     
-    private func validateOptionalRules(json: [String: AnyObject], withNewStruct newStruct: RefT) throws {
+    private func validateOptionalRules(json: [String: AnyObject]) throws -> [LateBindClosure] {
+        var bindings = [LateBindClosure]()
         for (name, rule) in optionalRules {
             let value = json[name]
             do {
-                try rule(value, newStruct)
+                if let binding = try rule(value) { bindings.append(binding) }
             } catch let err as RuleError {
                 throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
             }
         }
+        return bindings
     }
     
     private func dumpMandatoryRules(value: T, inout dictionary: [String: AnyObject]) throws {
@@ -823,6 +832,96 @@ public class StringifiedJSONRule<R: Rule>: Rule {
             throw RuleError.InvalidDump("Unable to dump stringified JSON for object: \(value)", error)
         }
     }
+}
+
+/**
+ Validator that passes JSON dictionary with given name to the nested rule. Usable for bypassing some nested 
+ JSON structs without a binding, see 'rule(rule:atPath:)' functions family.
+*/
+public class ProxyRule<R: Rule>: Rule {
+    public typealias V = R.V
+    
+    private let nestedRule: R
+    private let name: String
+    
+    /**
+     Validator initializer
+     
+     - parameter nestedRule: rule to validate resulting JSON
+     - parameter name: string name of the JSON disctionary to be passed to the nested rule
+     */
+    public init(_ name: String, _ nestedRule: R) {
+        self.nestedRule = nestedRule
+        self.name = name
+    }
+    
+    /**
+     Validates JSON dictionary if found by name given by nested rule. Throws if 'jsonValue' is not a disctionary, if it is
+     unable to find field with 'self.name' in it or if nested rule throws.
+     
+     - parameter jsonValue: JSON dictionary to be validated
+     
+     - throws: throws RuleError
+     
+     - returns: object of generic parameter argument if validation was successful
+     */
+    public func validate(jsonValue: AnyObject) throws -> V {
+        guard let json = jsonValue as? [String: AnyObject] else {
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary.", nil)
+        }
+        guard let value = json[name] else {
+            throw RuleError.ExpectedNotFound("Unable to go through \"\(json)\". Mandatory field \"\(name)\" not found in a struct.", nil)
+        }
+        return try nestedRule.validate(value)
+    }
+    
+    /**
+     Dumps JSON dictionary with 'self.name' as a key and a dump of the nedted rule as a value. Throws if nested dump fails.
+     
+     - parameter value: value of type R.V of the nested rule to be dumped
+     
+     - throws: throws RuleError
+     
+     - returns: JSON dictionary
+     */
+    public func dump(value: V) throws -> AnyObject {
+        return [name: try nestedRule.dump(value)]
+    }
+}
+
+/**
+ Returns ProxyRule for JSON struct of 1 level.
+ */
+public func rule<R: Rule>(rule: R, atPath p1: String) -> ProxyRule<R> {
+    return ProxyRule(p1, rule)
+}
+
+/**
+ Returns ProxyRule for JSON struct of 2 levels.
+ */
+public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String) -> ProxyRule<ProxyRule<R>> {
+    return ProxyRule(p1, ProxyRule(p2, rule))
+}
+
+/**
+ Returns ProxyRule for JSON struct of 3 levels.
+ */
+public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String, _ p3: String) -> ProxyRule<ProxyRule<ProxyRule<R>>> {
+    return ProxyRule(p1, ProxyRule(p2, ProxyRule(p3, rule)))
+}
+
+/**
+ Returns ProxyRule for JSON struct of 4 levels.
+ */
+public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String, _ p3: String, _ p4: String) -> ProxyRule<ProxyRule<ProxyRule<ProxyRule<R>>>> {
+    return ProxyRule(p1, ProxyRule(p2, ProxyRule(p3, ProxyRule(p4, rule))))
+}
+
+/**
+ Returns ProxyRule for JSON struct of 5 levels.
+ */
+public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String, _ p3: String, _ p4: String, _ p5: String) -> ProxyRule<ProxyRule<ProxyRule<ProxyRule<ProxyRule<R>>>>> {
+    return ProxyRule(p1, ProxyRule(p2, ProxyRule(p3, ProxyRule(p4, ProxyRule(p5, rule)))))
 }
 
 /**

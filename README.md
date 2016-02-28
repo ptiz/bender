@@ -1,5 +1,5 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.2.5-brightgreen.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.3.0-brightgreen.svg)]()
 
 Not just yet another JSON mapping framework for Swift, but tool for building rules for JSON structures validating and binding to your data types.
 
@@ -44,7 +44,7 @@ How could we check if we got the proper data? Bender helps us to describe our ex
 ```
 What does it mean? We literally created a _rule_, a schema that describes what we expect in our JSON: a struct with two mandatory fields, one of them is String and named "title", another is Int64 and named "size". But after all we want to _bind_ values that can be extracted from these fields into fields of a corresponding class Folder. 
 
-ClassRule gets ```@autoclosure``` that constructs new Folder object each time we are going to validate corresponding JSON fragment.
+ClassRule gets ```@autoclosure``` that constructs new Folder object each time we have validated corresponding JSON fragment. It is guaranteed that the binding object will not be created if the validation fails.
 
 In bind closures like ```{ $0.name = $1 }``` we pass Folder object reference as a $0 param and value exctracted for field "name" from JSON as $1. It is up to you what exact method of bindable item to call here. There can be adapters, coders, decoders, transformers etc., not only plain vanilla assignment.
 
@@ -87,6 +87,7 @@ Compound rules:
 Rules with nested rules:
 - ArrayRule - bind array of ony other type, validated by item rule
 - StringifiedJSONRule - bind any rule from JSON encoded into UTF-8 string
+- ProxyRule - allows to bypass some intermediate JSON structs without validation and binding
 
 ### Error handling
 Bender throws RuleError enum in case of validating or dumping errors, which stores optional information about a cause of error. 
@@ -111,6 +112,17 @@ Unable to validate array of Folder: item #0 could not be validated.
 Unable to validate mandatory field "size" for Folder.
 Value of unexpected type found: "256 Error!". Expected Int64.
 ```
+
+For sure, in some situations we should allow the world to be imperfect. Say, we found one black sheep in an array. Should we fail the validation of the whole array because one small item is erroneous? Sometimes no. Just declare the 'invalidItemHandler' closure:
+```swift
+let someArrayRule = ArrayRule(itemRule: someRule) {
+    print("Error: \($0)")
+    // If you still want to throw an error here, you can. Just do it:
+    // throw TheError("I am sure this is an unrecoverable error: \($0)")
+  }
+```
+If your 'invalidItemHandler' still throws, the whole array validation will fail in case of item validation error.
+
 ### Structs support
 Swift structs also supported as bindable items. For example, if our ```Folder``` is struct, not class, we still can bind it, using almost the same ```StructRule```:
 ```swift
@@ -131,6 +143,29 @@ You can even bind JSON structs into tuples! Use for that the StructRule as well:
   
   let newJson = try folderRule.dump(("home dir", 512))
   let tuple = try folderRule.validate(json) // 'tuple' will be of type (String, Int64)
+```
+
+### JSON path
+Sometimes you do not need to bind any intermediate JSON dictionaries. For example, you want to extract only 'user' information in a struct like this:
+```json
+{
+    "message": {
+        "payload": {
+            "createdBy": {
+                "user": {
+                    "id": "123456",
+                    "login": "johndoe@mail.com"
+                }
+            }
+        }
+    }
+}
+```
+You do not need to create redundant classes for all that intermediate stuff or play with tuples. Just use magic method ```rule(rule:atPath:)```:
+```swift
+  let rule = ClassRule(User())
+    .expect("message", rule(StringRule, atPath: "payload", "createdBy", "user", "id")) { $0.id = $1 }
+    .expect("message", rule(StringRule, atPath: "payload", "createdBy", "user", "login")) { $0.name = $1 }
 ```
 
 ### Core Data
@@ -212,11 +247,11 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.2.5'
+  pod 'Bender', '~> 1.3.0'
 ```
 **Carthage:**
 ```
-github "ptiz/Bender" == 1.2.5
+github "ptiz/Bender" == 1.3.0
 ```
 
 **Manual:**
