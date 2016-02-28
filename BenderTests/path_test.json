@@ -1,0 +1,15 @@
+{
+    "message": {
+        "header": {
+            "tok": 987654321
+        },
+        "payload": {
+            "createdBy": {
+                "user": {
+                    "id": "123456",
+                    "login": "johndoe@mail.com"
+                }
+            }
+        }
+    }
+}

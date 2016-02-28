@@ -21,6 +21,7 @@
 		5BAEB5101C47C5000044C0A7 /* stringified_negative_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAEB50F1C47C5000044C0A7 /* stringified_negative_test.json */; };
 		5BAEB5121C47D0480044C0A7 /* recursive_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAEB5111C47D0480044C0A7 /* recursive_test.json */; };
 		5BCE65501C7F9BF6000603ED /* array_skip_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BCE654F1C7F9BF6000603ED /* array_skip_test.json */; };
+		5BCE65551C8326EB000603ED /* path_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BCE65541C8326EB000603ED /* path_test.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,7 @@
 		5BAEB50F1C47C5000044C0A7 /* stringified_negative_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = stringified_negative_test.json; sourceTree = "<group>"; };
 		5BAEB5111C47D0480044C0A7 /* recursive_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = recursive_test.json; sourceTree = "<group>"; };
 		5BCE654F1C7F9BF6000603ED /* array_skip_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = array_skip_test.json; sourceTree = "<group>"; };
+		5BCE65541C8326EB000603ED /* path_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = path_test.json; sourceTree = "<group>"; };
 		6B17FF595E1FE853707766E6 /* Pods-BenderTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BenderTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-BenderTests/Pods-BenderTests.debug.xcconfig"; sourceTree = "<group>"; };
 		FF38713AA0E03EF651054F86 /* Pods-BenderTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BenderTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-BenderTests/Pods-BenderTests.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -127,6 +129,7 @@
 				5BAEB50F1C47C5000044C0A7 /* stringified_negative_test.json */,
 				5BAEB5111C47D0480044C0A7 /* recursive_test.json */,
 				5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */,
+				5BCE65541C8326EB000603ED /* path_test.json */,
 			);
 			path = BenderTests;
 			sourceTree = "<group>";
@@ -248,6 +251,7 @@
 				5BAEB5121C47D0480044C0A7 /* recursive_test.json in Resources */,
 				5B54EF231C3D4AD50072B2A8 /* enum_test.json in Resources */,
 				5B54EF211C3D46ED0072B2A8 /* natural_array_test.json in Resources */,
+				5BCE65551C8326EB000603ED /* path_test.json in Resources */,
 				5BAEB5101C47C5000044C0A7 /* stringified_negative_test.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
