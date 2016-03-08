@@ -574,7 +574,7 @@ public class ClassRule<T>: CompoundRule<T, T> {
         super.init(factory)
     }
     
-    public override func value(newStruct: T) -> T {
+    override func value(newStruct: T) -> T {
         return newStruct
     }
 }
@@ -588,9 +588,95 @@ public class StructRule<T>: CompoundRule<T, ref<T>> {
         super.init(factory)
     }
     
-    public override func value(newStruct: ref<T>) -> T {
+    override func value(newStruct: ref<T>) -> T {
         return newStruct.value
     }
+}
+
+public class TupleRule<T>: Rule {
+    public typealias V = T
+    
+    typealias ValidateClosure = ([String: AnyObject]) throws ->T
+    var validateClosure: ValidateClosure!
+
+    public init() {
+    }
+    
+    public func validate(jsonValue: AnyObject) throws -> T {
+        guard let json = jsonValue as? [String: AnyObject] else {
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
+        }
+        return try validateClosure(json)
+    }
+    
+    public func dump(value: V) throws -> AnyObject {
+        fatalError("Dump of tuple rule of \(T.self) is not implemented yet.")
+    }
+    
+    public func bindAll<R1: Rule>(rule1: (Bool, String, R1), bind: (R1.V)->T) -> Self {
+        validateClosure = { json in
+            return try bind(self.validateRule(json, rule1))
+        }
+        return self
+    }
+    
+    public func bindAll<R1: Rule, R2: Rule>(rule1: (Bool, String, R1), _ rule2: (Bool, String, R2), bind: (R1.V, R2.V)->T) -> Self {
+        validateClosure = { json in
+            return try bind(self.validateRule(json, rule1), self.validateRule(json, rule2))
+        }
+        return self
+    }
+    
+    public func bindAll<A, B, C where A: Rule, B: Rule, C: Rule>(rule1: (Bool, String, A), _ rule2: (Bool, String, B), _ rule3: (Bool, String, C), bind: (A.V, B.V, C.V)->T) -> Self {
+        validateClosure = { json in
+            return bind(try self.validateRule(json, rule1), try self.validateRule(json, rule2), try self.validateRule(json, rule3))
+        }
+        return self
+    }
+    
+    public func bindAll<A: Rule, B: Rule, C: Rule, D: Rule>(rule1: (Bool, String, A), _ rule2: (Bool, String, B), _ rule3: (Bool, String, C), _ rule4: (Bool, String, D), bind: (A.V, B.V, C.V, D.V)->T) -> Self {
+        validateClosure = { json in
+            return bind(try self.validateRule(json, rule1), try self.validateRule(json, rule2), try self.validateRule(json, rule3), try self.validateRule(json, rule4))
+        }
+        return self
+    }
+
+    func validateRule<R: Rule>(json: [String: AnyObject], _ rule: (Bool, String, R)) throws -> R.V! {
+        return rule.0 ?
+            try validateMandatoryRule(json, name: rule.1, rule: rule.2) :
+            try validateOptionalRule(json, name: rule.1, rule: rule.2)
+    }
+    
+    func validateMandatoryRule<R: Rule>(json: [String: AnyObject], name: String, rule: R) throws -> R.V {
+        guard let value = json[name] where !(value is NSNull) else {
+            throw RuleError.ExpectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
+        }
+        
+        do {
+            return try rule.validate(value)
+        } catch let err as RuleError {
+            throw RuleError.InvalidJSONType("Unable to validate mandatory field \"\(name)\" for \(T.self).", err)
+        }
+    }
+    
+    func validateOptionalRule<R: Rule>(json: [String: AnyObject], name: String, rule: R) throws -> R.V? {
+        guard let value = json[name] where !(value is NSNull) else {
+            return nil
+        }
+        do {
+            return try rule.validate(value)
+        } catch let err as RuleError {
+            throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
+        }
+    }
+}
+
+public func mandatory<R: Rule>(name: String, rule: R) -> (Bool, String, R) {
+    return (true, name, rule)
+}
+
+public func optional<R: Rule>(name: String, _ rule: R) -> (Bool, String, R) {
+    return (false, name, rule)
 }
 
 /**

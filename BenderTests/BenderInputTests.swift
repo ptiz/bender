@@ -221,6 +221,23 @@ class BenderInTests: QuickSpec {
                 expect(user!.id).to(equal("123456"))
                 
             }
+            
+            it("should be able to bind immutable structures") {
+                let jsonObject = jsonFromFile("defaults_test")
+                
+                let adminStaffRule = EnumRule(ifNotFound: AdminStaff.Other)
+                    .option("ENGINEER", .Engineer)
+
+                let r = TupleRule<ImmutableEmployee>().bindAll(
+                        mandatory("name", StringRule),
+                        optional("age", DoubleRule),
+                        mandatory("position", adminStaffRule)
+                    ) { ImmutableEmployee(name: $0, age: $1?, position: $2) }
+                
+                let employees = try? ArrayRule(itemRule: r).validate(jsonObject)
+                
+                expect(employees).toNot(beNil())
+            }
         }
         
         describe("Array validation") {
@@ -515,4 +532,10 @@ class TraceableObject {
 struct User {
     var id: String!
     var name: String!
+}
+
+struct ImmutableEmployee {
+    let name: String
+    let age: Double?
+    let position: AdminStaff
 }
