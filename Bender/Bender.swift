@@ -834,94 +834,50 @@ public class StringifiedJSONRule<R: Rule>: Rule {
     }
 }
 
-/**
- Validator that passes JSON dictionary with given name to the nested rule. Usable for bypassing some nested 
- JSON structs without a binding, see 'rule(rule:atPath:)' functions family.
-*/
-public class ProxyRule<R: Rule>: Rule {
-    public typealias V = R.V
+public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible {
     
-    private let nestedRule: R
-    private let name: String
+    private let path: [String]
     
-    /**
-     Validator initializer
-     
-     - parameter nestedRule: rule to validate resulting JSON
-     - parameter name: string name of the JSON disctionary to be passed to the nested rule
-     */
-    public init(_ name: String, _ nestedRule: R) {
-        self.nestedRule = nestedRule
-        self.name = name
+    public init(unicodeScalarLiteral value: String) {
+        path = [value]
     }
     
-    /**
-     Validates JSON dictionary if found by name given by nested rule. Throws if 'jsonValue' is not a disctionary, if it is
-     unable to find field with 'self.name' in it or if nested rule throws.
-     
-     - parameter jsonValue: JSON dictionary to be validated
-     
-     - throws: throws RuleError
-     
-     - returns: object of generic parameter argument if validation was successful
-     */
-    public func validate(jsonValue: AnyObject) throws -> V {
-        guard let json = jsonValue as? [String: AnyObject] else {
-            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary.", nil)
+    public init(extendedGraphemeClusterLiteral value: String) {
+        path = [value]
+    }
+    
+    public init(stringLiteral value: String) {
+        path = [value]
+    }
+    
+    public init(arrayLiteral elements: String...) {
+        path = elements
+    }
+    
+    public init(_ elements: [String]) {
+        path = elements
+    }
+    
+    public subscript(index: Int) -> String {
+        get {
+            return path[index]
         }
-        guard let value = json[name] else {
-            throw RuleError.ExpectedNotFound("Unable to go through \"\(json)\". Mandatory field \"\(name)\" not found in a struct.", nil)
+    }
+}
+
+func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
+    var currentObject: AnyObject? = object
+    for index in 0..<path.path.count {
+        guard let currentDict = currentObject as? [String: AnyObject] else {
+            return nil
         }
-        return try nestedRule.validate(value)
+        if let next = currentDict[path[index]] where !(next is NSNull) {
+            currentObject = next
+            continue
+        }
+        currentObject = nil
     }
-    
-    /**
-     Dumps JSON dictionary with 'self.name' as a key and a dump of the nedted rule as a value. Throws if nested dump fails.
-     
-     - parameter value: value of type R.V of the nested rule to be dumped
-     
-     - throws: throws RuleError
-     
-     - returns: JSON dictionary
-     */
-    public func dump(value: V) throws -> AnyObject {
-        return [name: try nestedRule.dump(value)]
-    }
-}
-
-/**
- Returns ProxyRule for JSON struct of 1 level.
- */
-public func rule<R: Rule>(rule: R, atPath p1: String) -> ProxyRule<R> {
-    return ProxyRule(p1, rule)
-}
-
-/**
- Returns ProxyRule for JSON struct of 2 levels.
- */
-public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String) -> ProxyRule<ProxyRule<R>> {
-    return ProxyRule(p1, ProxyRule(p2, rule))
-}
-
-/**
- Returns ProxyRule for JSON struct of 3 levels.
- */
-public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String, _ p3: String) -> ProxyRule<ProxyRule<ProxyRule<R>>> {
-    return ProxyRule(p1, ProxyRule(p2, ProxyRule(p3, rule)))
-}
-
-/**
- Returns ProxyRule for JSON struct of 4 levels.
- */
-public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String, _ p3: String, _ p4: String) -> ProxyRule<ProxyRule<ProxyRule<ProxyRule<R>>>> {
-    return ProxyRule(p1, ProxyRule(p2, ProxyRule(p3, ProxyRule(p4, rule))))
-}
-
-/**
- Returns ProxyRule for JSON struct of 5 levels.
- */
-public func rule<R: Rule>(rule: R, atPath p1: String, _ p2: String, _ p3: String, _ p4: String, _ p5: String) -> ProxyRule<ProxyRule<ProxyRule<ProxyRule<ProxyRule<R>>>>> {
-    return ProxyRule(p1, ProxyRule(p2, ProxyRule(p3, ProxyRule(p4, ProxyRule(p5, rule)))))
+    return currentObject
 }
 
 /**
@@ -988,3 +944,8 @@ public extension Rule {
         }
     }
 }
+
+func /(path: JSONPath, right: String) -> JSONPath {
+    return JSONPath(path.path + [right])
+}
+
