@@ -970,7 +970,7 @@ public extension Rule {
     }
 }
 
-func /(path: JSONPath, right: String) -> JSONPath {
+public func /(path: JSONPath, right: String) -> JSONPath {
     return JSONPath(path.elements + [right])
 }
 
