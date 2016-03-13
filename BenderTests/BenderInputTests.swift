@@ -60,6 +60,14 @@ class BenderInTests: QuickSpec {
                 
                 expect(obj1).to(beNil())
             }
+            
+            it("should create intermediate dictionaries for path if needed") {
+                let path = "message"/"payload"/"createdBy"/"user"/"id"
+                let data = try? setInDictionary([:], object: "123456", atPath: path)
+                let obj = objectIn(data!, atPath: path) as? String
+                
+                expect(obj).to(equal("123456"))
+            }
         }
         
         describe("Basic struct validation") {
@@ -231,21 +239,22 @@ class BenderInTests: QuickSpec {
             it("should be able to go through JSON by name path") {
                 let jsonObject = jsonFromFile("path_test")
                 
-//                let r = rule(StringRule, atPath: "message", "payload", "createdBy", "user", "id")
-//                let userID = try? r.validate(jsonObject)
-//                
-//                expect(userID).toNot(beNil())
-//                expect(userID).to(equal("123456"))
-//                
-//                let m = StructRule(ref(User(id: nil, name: nil)))
-//                    .expect("message", rule(StringRule, atPath: "payload", "createdBy", "user", "id")) { $0.value.id = $1 }
-//                    .expect("message", rule(StringRule, atPath: "payload", "createdBy", "user", "login")) { $0.value.name = $1 }
-//                
-//                let user = try? m.validate(jsonObject)
-//                
-//                expect(user).toNot(beNil())
-//                expect(user!.id).to(equal("123456"))
+                let r = StructRule(ref(""))
+                    .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule) { $0.value = $1 }
                 
+                let userID = try? r.validate(jsonObject)
+                
+                expect(userID).toNot(beNil())
+                expect(userID).to(equal("123456"))
+                
+                let m = StructRule(ref(User(id: nil, name: nil)))
+                    .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule) { $0.value.id = $1 }
+                    .expect("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.value.name = $1 }
+                
+                let user = try? m.validate(jsonObject)
+                
+                expect(user).toNot(beNil())
+                expect(user!.id).to(equal("123456"))
             }
         }
         

@@ -221,13 +221,13 @@ public class CompoundRule<T, RefT>: Rule {
     private typealias DumpRuleClosure = (T) throws -> AnyObject
     private typealias DumpOptionalRuleClosure = (T) throws -> AnyObject?
     
-    private var requirements = [(String, RequirementClosure)]()
+    private var requirements = [(JSONPath, RequirementClosure)]()
     
-    private var mandatoryRules = [(String, RuleClosure)]()
-    private var optionalRules = [(String, OptionalRuleClosure)]()
+    private var mandatoryRules = [(JSONPath, RuleClosure)]()
+    private var optionalRules = [(JSONPath, OptionalRuleClosure)]()
     
-    private var mandatoryDumpRules = [(String, DumpRuleClosure)]()
-    private var optionalDumpRules = [(String, DumpOptionalRuleClosure)]()
+    private var mandatoryDumpRules = [(JSONPath, DumpRuleClosure)]()
+    private var optionalDumpRules = [(JSONPath, DumpOptionalRuleClosure)]()
     
     private let factory: ()->RefT
     
@@ -250,8 +250,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func required<R: Rule>(name: String, _ rule: R, requirement: (R.V)->Bool) -> Self {
-        requirements.append((name,  { requirement(try rule.validate($0)) }))
+    public func required<R: Rule>(path: JSONPath, _ rule: R, requirement: (R.V)->Bool) -> Self {
+        requirements.append((path,  { requirement(try rule.validate($0)) }))
         return self
     }
 
@@ -265,8 +265,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
-        mandatoryRules.append((name, storeRule(rule, bind)))
+    public func expect<R: Rule>(path: JSONPath, _ rule: R, _ bind: (RefT, R.V)->Void) -> Self {
+        mandatoryRules.append((path, storeRule(rule, bind)))
         return self
     }
 
@@ -281,9 +281,9 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
-        mandatoryRules.append((name, storeRule(rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
+    public func expect<R: Rule>(path: JSONPath, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+        mandatoryRules.append((path, storeRule(rule, bind)))
+        mandatoryDumpRules.append((path, storeDumpRuleForseNull(rule, dump)))
         return self
     }
 
@@ -298,9 +298,9 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
-        mandatoryRules.append((name, storeRule(rule, bind)))
-        mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
+    public func expect<R: Rule>(path: JSONPath, _ rule: R, _ bind: (RefT, R.V)->Void, dump: (T)->R.V) -> Self {
+        mandatoryRules.append((path, storeRule(rule, bind)))
+        mandatoryDumpRules.append((path, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -314,8 +314,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
-        mandatoryDumpRules.append((name, storeDumpRuleForseNull(rule, dump)))
+    public func expect<R: Rule>(path: JSONPath, _ rule: R, dump: (T)->R.V?) -> Self {
+        mandatoryDumpRules.append((path, storeDumpRuleForseNull(rule, dump)))
         return self
     }
     
@@ -329,8 +329,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func expect<R: Rule>(name: String, _ rule: R, dump: (T)->R.V) -> Self {
-        mandatoryDumpRules.append((name, storeDumpRule(rule, dump)))
+    public func expect<R: Rule>(path: JSONPath, _ rule: R, dump: (T)->R.V) -> Self {
+        mandatoryDumpRules.append((path, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -346,8 +346,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void) -> Self {
-        optionalRules.append((name, storeOptionalRule(rule, ifNotFound, bind)))
+    public func optional<R: Rule>(path: JSONPath, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void) -> Self {
+        optionalRules.append((path, storeOptionalRule(rule, ifNotFound, bind)))
         return self
     }
 
@@ -364,9 +364,9 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
-        optionalRules.append((name, storeOptionalRule(rule, ifNotFound, bind)))
-        optionalDumpRules.append((name, storeDumpRule(rule, dump)))
+    public func optional<R: Rule>(path: JSONPath, _ rule: R, ifNotFound: R.V? = nil, _ bind: (RefT, R.V)->Void, dump: (T)->R.V?) -> Self {
+        optionalRules.append((path, storeOptionalRule(rule, ifNotFound, bind)))
+        optionalDumpRules.append((path, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -380,8 +380,8 @@ public class CompoundRule<T, RefT>: Rule {
      
      - returns: returns self for field declaration chaining
      */
-    public func optional<R: Rule>(name: String, _ rule: R, dump: (T)->R.V?) -> Self {
-        optionalDumpRules.append((name, storeDumpRule(rule, dump)))
+    public func optional<R: Rule>(path: JSONPath, _ rule: R, dump: (T)->R.V?) -> Self {
+        optionalDumpRules.append((path, storeDumpRule(rule, dump)))
         return self
     }
     
@@ -494,20 +494,20 @@ public class CompoundRule<T, RefT>: Rule {
     }
     
     private func validateRequirements(json:[String: AnyObject]) throws {
-        for (name, rule) in requirements {
-            guard let value = json[name] else {
-                throw RuleError.ExpectedNotFound("Unable to check the requirement, field \"\(name)\" not found in struct.", nil)
+        for (path, rule) in requirements {
+            guard let value = objectIn(json, atPath: path) else {
+                throw RuleError.ExpectedNotFound("Unable to check the requirement, field \"\(path)\" not found in struct.", nil)
             }
             
             do {
                 if !(try rule(value)) {
-                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(name)\" with value \"\(value)\"", nil)
+                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(path)\" with value \"\(value)\"", nil)
                 }
             } catch let err as RuleError {
                 switch err {
                 case .UnmetRequirement: throw err
                 default:
-                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(name)\" with value \"\(value)\"", err)
+                    throw RuleError.UnmetRequirement("Requirement was not met for field \"\(path)\" with value \"\(value)\"", err)
                 }
             }
         }
@@ -515,15 +515,15 @@ public class CompoundRule<T, RefT>: Rule {
     
     private func validateMandatoryRules(json: [String: AnyObject]) throws -> [LateBindClosure] {
         var bindings = [LateBindClosure]()
-        for (name, rule) in mandatoryRules {
-            guard let value = json[name] where !(value is NSNull) else {
-                throw RuleError.ExpectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(name)\" not found in struct.", nil)
+        for (path, rule) in mandatoryRules {
+            guard let value = objectIn(json, atPath: path) else {
+                throw RuleError.ExpectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(path)\" not found in struct.", nil)
             }
             
             do {
                 if let binding = try rule(value) { bindings.append(binding) }
             } catch let err as RuleError {
-                throw RuleError.InvalidJSONType("Unable to validate mandatory field \"\(name)\" for \(T.self).", err)
+                throw RuleError.InvalidJSONType("Unable to validate mandatory field \"\(path)\" for \(T.self).", err)
             }
         }
         return bindings
@@ -531,35 +531,35 @@ public class CompoundRule<T, RefT>: Rule {
     
     private func validateOptionalRules(json: [String: AnyObject]) throws -> [LateBindClosure] {
         var bindings = [LateBindClosure]()
-        for (name, rule) in optionalRules {
-            let value = json[name]
+        for (path, rule) in optionalRules {
+            let value = objectIn(json, atPath: path)
             do {
                 if let binding = try rule(value) { bindings.append(binding) }
             } catch let err as RuleError {
-                throw RuleError.InvalidJSONType("Unable to validate optional field \"\(name)\" for \(T.self).", err)
+                throw RuleError.InvalidJSONType("Unable to validate optional field \"\(path)\" for \(T.self).", err)
             }
         }
         return bindings
     }
     
     private func dumpMandatoryRules(value: T, inout dictionary: [String: AnyObject]) throws {
-        for (name, rule) in mandatoryDumpRules {
+        for (path, rule) in mandatoryDumpRules {
             do {
-                dictionary[name] = try rule(value)
+                dictionary = try setInDictionary(dictionary, object: try rule(value), atPath: path)
             } catch let err as RuleError {
-                throw RuleError.InvalidDump("Unable to dump mandatory field \(name) for \(T.self).", err)
+                throw RuleError.InvalidDump("Unable to dump mandatory field \(path) for \(T.self).", err)
             }
         }
     }
     
     private func dumpOptionalRules(value: T, inout dictionary: [String: AnyObject]) throws {
-        for (name, rule) in optionalDumpRules {
+        for (path, rule) in optionalDumpRules {
             do {
                 if let v = try rule(value) {
-                    dictionary[name] = v
+                    dictionary = try setInDictionary(dictionary, object: v, atPath: path)
                 }
             } catch let err as RuleError {
-                throw RuleError.InvalidDump("Unable to dump optional field \(name) for \(T.self).", err)
+                throw RuleError.InvalidDump("Unable to dump optional field \(path) for \(T.self).", err)
             }
         }
     }
@@ -834,50 +834,75 @@ public class StringifiedJSONRule<R: Rule>: Rule {
     }
 }
 
-public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible {
+public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible, CustomStringConvertible {
     
-    private let path: [String]
+    public let elements: [String]
     
     public init(unicodeScalarLiteral value: String) {
-        path = [value]
+        elements = [value]
     }
     
     public init(extendedGraphemeClusterLiteral value: String) {
-        path = [value]
+        elements = [value]
     }
     
     public init(stringLiteral value: String) {
-        path = [value]
+        elements = [value]
     }
     
     public init(arrayLiteral elements: String...) {
-        path = elements
+        self.elements = elements
     }
     
     public init(_ elements: [String]) {
-        path = elements
+        self.elements = elements
     }
     
-    public subscript(index: Int) -> String {
-        get {
-            return path[index]
+    public var description: String {
+        var str = elements.first ?? ""
+        for index in 1..<elements.count {
+            str += "/\(elements[index])"
         }
+        return str
+    }
+    
+    public func tail() -> JSONPath {
+        return JSONPath(Array(elements[1..<elements.count]))
     }
 }
 
 func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     var currentObject: AnyObject? = object
-    for index in 0..<path.path.count {
+    for pathItem in path.elements {
         guard let currentDict = currentObject as? [String: AnyObject] else {
             return nil
         }
-        if let next = currentDict[path[index]] where !(next is NSNull) {
+        if let next = currentDict[pathItem] where !(next is NSNull) {
             currentObject = next
             continue
         }
         currentObject = nil
     }
     return currentObject
+}
+
+func setInDictionary(var dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+    if path.elements.count == 1 {
+        dictionary[path.elements.last!] = object
+        return dictionary
+    }
+    
+    let pathElement = path.elements.first!
+    if let nestedObject = dictionary[pathElement] {
+        guard let existingDictionary = nestedObject as? [String: AnyObject] else {
+            throw RuleError.InvalidDump("\"\(pathElement)\" is not a dictionary.", nil)
+        }
+        dictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail())
+        return dictionary
+    }
+    
+    dictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
+    return dictionary
 }
 
 /**
@@ -946,6 +971,6 @@ public extension Rule {
 }
 
 func /(path: JSONPath, right: String) -> JSONPath {
-    return JSONPath(path.path + [right])
+    return JSONPath(path.elements + [right])
 }
 
