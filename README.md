@@ -1,5 +1,5 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.3.0-brightgreen.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.4.0-brightgreen.svg)]()
 
 Not just yet another JSON mapping framework for Swift, but tool for building rules for JSON structures validating and binding to your data types.
 
@@ -247,11 +247,11 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.3.0'
+  pod 'Bender', '~> 1.4.0'
 ```
 **Carthage:**
 ```
-github "ptiz/Bender" == 1.3.0
+github "ptiz/Bender" == 1.4.0
 ```
 
 **Manual:**
