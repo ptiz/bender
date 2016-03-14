@@ -7,7 +7,8 @@
             "createdBy": {
                 "user": {
                     "id": "123456",
-                    "login": "johndoe@mail.com"
+                    "login": "johndoe@mail.com",
+                    "invisible": null
                 }
             }
         }

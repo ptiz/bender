@@ -132,6 +132,21 @@ class BenderOutTests: QuickSpec {
                 expect(str).to(contain("\"number\":13"))
                 expect(str).to(contain("\"name\":\"Test13\""))
             }
+            
+            it("should be able to dump value at JSON path") {
+                let userStruct = User(id: "123456", name: nil)
+                
+                let m = StructRule(ref(User(id: nil, name: nil)))
+                    .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule, { $0.value.id = $1 }) { $0.id }
+                    .optional("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.value.name = $1 }
+                
+                let data = try? m.dump(userStruct) as! [String: AnyObject]
+                let user = try? m.validate(data!)
+                
+                expect(user).toNot(beNil())
+                expect(user?.id).to(equal(userStruct.id))
+            }
+            
         }
         
         describe("Array dump") {
