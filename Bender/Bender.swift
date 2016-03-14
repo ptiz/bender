@@ -955,21 +955,32 @@ public extension Rule {
                 throw RuleError.ExpectedNotFound("Unable to get JSON object: no data found.", nil)
             }
             return try validate(try NSJSONSerialization.JSONObjectWithData(data, options: []))
-        } catch let error as NSError {
-            throw RuleError.InvalidJSONSerialization("Unable to get JSON from data given", error)
+        } catch let error as RuleError {
+            throw RuleError.InvalidJSONType("Unable to get JSON from data given.", error)
+        } catch let error {
+            throw RuleError.InvalidJSONType("Unable to get JSON from data given. \(error)", nil)
         }
     }
     
     public func dumpData(value: V) throws -> NSData {
         do {
             return try NSJSONSerialization.dataWithJSONObject(try dump(value), options: NSJSONWritingOptions(rawValue: 0))
-        } catch let error as NSError {
-            let cause = RuleError.InvalidJSONSerialization("Could not convert JSON object to data.", error)
-            throw RuleError.InvalidDump("Unable to dump value \(value) to JSON data.", cause)
+        } catch let error as RuleError {
+            throw RuleError.InvalidDump("Unable to dump value \(value) to JSON data.", error)
+        } catch let error {
+            throw RuleError.InvalidDump("Unable to dump value \(value) to JSON data. \(error)", nil)
         }
     }
 }
 
+/**
+ Operator constructing JSONPath
+ 
+ - parameter path:  JSONPath object or string literal for conversion initializer
+ - parameter right: string literal to be added to the path
+ 
+ - returns: newly created JSONPath with 'right' appended to it
+ */
 public func /(path: JSONPath, right: String) -> JSONPath {
     return JSONPath(path.elements + [right])
 }
