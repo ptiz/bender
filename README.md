@@ -87,7 +87,6 @@ Compound rules:
 Rules with nested rules:
 - ArrayRule - bind array of ony other type, validated by item rule
 - StringifiedJSONRule - bind any rule from JSON encoded into UTF-8 string
-- ProxyRule - allows to bypass some intermediate JSON structs without validation and binding
 
 ### Error handling
 Bender throws RuleError enum in case of validating or dumping errors, which stores optional information about a cause of error. 
@@ -161,11 +160,11 @@ Sometimes you do not need to bind any intermediate JSON dictionaries. For exampl
     }
 }
 ```
-You do not need to create redundant classes for all that intermediate stuff or play with tuples. Just use magic method ```rule(rule:atPath:)```:
+You do not need to create redundant classes for all that intermediate stuff or play with tuples. Just use magic operator "/" to construct the path needed:
 ```swift
   let rule = ClassRule(User())
-    .expect("message", rule(StringRule, atPath: "payload", "createdBy", "user", "id")) { $0.id = $1 }
-    .expect("message", rule(StringRule, atPath: "payload", "createdBy", "user", "login")) { $0.name = $1 }
+    .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule) { $0.id = $1 }
+    .expect("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.name = $1 }
 ```
 
 ### Core Data
