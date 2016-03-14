@@ -247,14 +247,19 @@ class BenderInTests: QuickSpec {
                 expect(userID).toNot(beNil())
                 expect(userID).to(equal("123456"))
                 
+                var invisibleVar: String? = "expected value"
+                
                 let m = StructRule(ref(User(id: nil, name: nil)))
                     .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule) { $0.value.id = $1 }
                     .expect("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.value.name = $1 }
+                    .optional("message"/"payload"/"createdBy"/"user"/"invisible", StringRule) { invisibleVar = $1 }
+                    .optional("message"/"payload"/"createdBy"/"user"/"nonexistent", StringRule) { invisibleVar = $1 }
                 
                 let user = try? m.validate(jsonObject)
                 
                 expect(user).toNot(beNil())
                 expect(user!.id).to(equal("123456"))
+                expect(invisibleVar).to(equal("expected value"))
             }
         }
         
