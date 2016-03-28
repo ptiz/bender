@@ -30,8 +30,6 @@ import XCTest
 import Quick
 import Nimble
 
-@testable import Bender
-
 class BenderInTests: QuickSpec {
     
     override func spec() {
