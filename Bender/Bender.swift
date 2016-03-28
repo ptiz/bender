@@ -97,7 +97,7 @@ public indirect enum RuleError: ErrorType, CustomStringConvertible {
  Base generic bender protocol for validator rule.
  */
 public protocol Rule {
-    typealias V
+    associatedtype V
     func validate(jsonValue: AnyObject) throws -> V
     func dump(value: V) throws -> AnyObject
 }
@@ -886,23 +886,24 @@ func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     return currentObject
 }
 
-func setInDictionary(var dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+func setInDictionary(dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+    var traverseDictionary = dictionary
     if path.elements.count == 1 {
-        dictionary[path.elements.last!] = object
-        return dictionary
+        traverseDictionary[path.elements.last!] = object
+        return traverseDictionary
     }
     
     let pathElement = path.elements.first!
-    if let nestedObject = dictionary[pathElement] {
+    if let nestedObject = traverseDictionary[pathElement] {
         guard let existingDictionary = nestedObject as? [String: AnyObject] else {
             throw RuleError.InvalidDump("\"\(pathElement)\" is not a dictionary.", nil)
         }
-        dictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail())
-        return dictionary
+        traverseDictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail())
+        return traverseDictionary
     }
     
-    dictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
-    return dictionary
+    traverseDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
+    return traverseDictionary
 }
 
 /**
