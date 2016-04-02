@@ -1,0 +1,12 @@
+[
+ {
+    "type": "circle",
+    "name": "Circle 1",
+    "radius": 16.0
+ },
+ {
+    "type": "square",
+    "name": "Square 1",
+    "size": 33.0
+ }
+]

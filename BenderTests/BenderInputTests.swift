@@ -259,6 +259,32 @@ class BenderInTests: QuickSpec {
                 expect(user!.id).to(equal("123456"))
                 expect(invisibleVar).to(equal("expected value"))
             }
+            
+            it("should be able to validate polymorphic arrays") {
+                
+                let jsonObject = jsonFromFile("polyclass_test")
+                
+                let c = ClassRule(Circle())
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .expect("radius", FloatRule) { $0.radius = $1 }
+                
+                let s = ClassRule(Square())
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .expect("size", FloatRule) { $0.size = $1 }
+                
+                let check = StructRule(ref(""))
+                    .expect("type", StringRule) { $0.value = $1 }
+                
+                let r = PolyClassRule<Figure>()
+                    .type({ try! check.validate($0) == "circle" }, rule: c)
+                    .type({ try! check.validate($0) == "square" }, rule: s)
+                
+                let f = ArrayRule(itemRule: r)
+                
+                let figures = try? f.validate(jsonObject)
+                
+                expect(figures!.count).to(equal(2))
+            }
         }
         
         describe("Array validation") {
@@ -553,4 +579,18 @@ class TraceableObject {
 struct User {
     var id: String!
     var name: String!
+}
+
+class Figure {
+    var name: String!
+    init() {
+    }
+}
+
+class Circle: Figure {
+    var radius: Float!
+}
+
+class Square: Figure {
+    var size: Float!
 }

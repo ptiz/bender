@@ -17,6 +17,7 @@
 		5B54EF1F1C3D39DB0072B2A8 /* array_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B54EF1E1C3D39DB0072B2A8 /* array_test.json */; };
 		5B54EF211C3D46ED0072B2A8 /* natural_array_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B54EF201C3D46ED0072B2A8 /* natural_array_test.json */; };
 		5B54EF231C3D4AD50072B2A8 /* enum_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B54EF221C3D4AD50072B2A8 /* enum_test.json */; };
+		5B63DBA11CAFEC73008ED497 /* polyclass_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B63DBA01CAFEC73008ED497 /* polyclass_test.json */; };
 		5BAEB50E1C47BE1F0044C0A7 /* stringified_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAEB50D1C47BE1F0044C0A7 /* stringified_test.json */; };
 		5BAEB5101C47C5000044C0A7 /* stringified_negative_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAEB50F1C47C5000044C0A7 /* stringified_negative_test.json */; };
 		5BAEB5121C47D0480044C0A7 /* recursive_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAEB5111C47D0480044C0A7 /* recursive_test.json */; };
@@ -63,6 +64,7 @@
 		5B54EF1E1C3D39DB0072B2A8 /* array_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = array_test.json; sourceTree = "<group>"; };
 		5B54EF201C3D46ED0072B2A8 /* natural_array_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = natural_array_test.json; sourceTree = "<group>"; };
 		5B54EF221C3D4AD50072B2A8 /* enum_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = enum_test.json; sourceTree = "<group>"; };
+		5B63DBA01CAFEC73008ED497 /* polyclass_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = polyclass_test.json; sourceTree = "<group>"; };
 		5BAEB50D1C47BE1F0044C0A7 /* stringified_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = stringified_test.json; sourceTree = "<group>"; };
 		5BAEB50F1C47C5000044C0A7 /* stringified_negative_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = stringified_negative_test.json; sourceTree = "<group>"; };
 		5BAEB5111C47D0480044C0A7 /* recursive_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = recursive_test.json; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 				5BAEB5111C47D0480044C0A7 /* recursive_test.json */,
 				5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */,
 				5BCE65541C8326EB000603ED /* path_test.json */,
+				5B63DBA01CAFEC73008ED497 /* polyclass_test.json */,
 			);
 			path = BenderTests;
 			sourceTree = "<group>";
@@ -277,6 +280,7 @@
 				5B54EF1D1C3D38A60072B2A8 /* basic_test.json in Resources */,
 				5BCE65501C7F9BF6000603ED /* array_skip_test.json in Resources */,
 				5B54EF1F1C3D39DB0072B2A8 /* array_test.json in Resources */,
+				5B63DBA11CAFEC73008ED497 /* polyclass_test.json in Resources */,
 				5BAEB5121C47D0480044C0A7 /* recursive_test.json in Resources */,
 				5B54EF231C3D4AD50072B2A8 /* enum_test.json in Resources */,
 				5B54EF211C3D46ED0072B2A8 /* natural_array_test.json in Resources */,

@@ -50,17 +50,6 @@ public class ObjectRule<T, RefT>: Rule {
     private var mandatoryDumpRules = [(JSONPath, DumpRuleClosure)]()
     private var optionalDumpRules = [(JSONPath, DumpOptionalRuleClosure)]()
     
-    private let factory: ()->RefT
-    
-    /**
-     Validator initializer
-     
-     - parameter factory: autoclosure for allocating object, which returns reference to object of generic type T
-     */
-    public init(@autoclosure(escaping) _ factory: ()->RefT) {
-        self.factory = factory
-    }
-    
     /**
      Methoid for declaring requirement for input data, which must be met. Did not cause creation of a new bind item.
      Throws if the requirement was not met. No binding is possible while checking requirement.
@@ -225,7 +214,7 @@ public class ObjectRule<T, RefT>: Rule {
         let mandatoryBindings = try validateMandatoryRules(json)
         let optionalBindings = try validateOptionalRules(json)
         
-        let newStruct = factory()
+        let newStruct = try factory(json)
         
         for binding in mandatoryBindings + optionalBindings {
             binding(newStruct)
@@ -250,6 +239,10 @@ public class ObjectRule<T, RefT>: Rule {
         try dumpOptionalRules(value, dictionary: &dictionary)
         
         return dictionary
+    }
+    
+    func factory(jsonValue: [String: AnyObject]) throws -> RefT {
+        fatalError("ObjectRule.factory is an abstract method. Please override it in descendants.")
     }
     
     /**
@@ -391,12 +384,18 @@ public class ObjectRule<T, RefT>: Rule {
  */
 public class ClassRule<T>: ObjectRule<T, T> {
     
-    public override init(@autoclosure(escaping) _ factory: ()->T) {
-        super.init(factory)
+    private let factory: ()->T
+    
+    public init(@autoclosure(escaping) _ factory: ()->T) {
+        self.factory = factory
     }
     
     public override func value(newStruct: T) -> T {
         return newStruct
+    }
+    
+    override func factory(jsonValue: [String: AnyObject]) throws -> T {
+        return self.factory()
     }
 }
 
@@ -405,12 +404,79 @@ public class ClassRule<T>: ObjectRule<T, T> {
  */
 public class StructRule<T>: ObjectRule<T, ref<T>> {
     
-    public override init(@autoclosure(escaping) _ factory: ()->ref<T>) {
-        super.init(factory)
+    private let factory: ()->ref<T>
+    
+    public init(@autoclosure(escaping) _ factory: ()->ref<T>) {
+        self.factory = factory
     }
     
     public override func value(newStruct: ref<T>) -> T {
         return newStruct.value
+    }
+    
+    override func factory(jsonValue: [String: AnyObject]) throws -> ref<T> {
+        return self.factory()
+    }
+}
+
+public class ContextClassRule<T>: ObjectRule<T, T> {
+    
+    private let factory: ([String: AnyObject]) throws ->T
+    
+    public init(_ factory: ([String: AnyObject]) throws ->T) {
+        self.factory = factory
+    }
+    
+    public override func value(newStruct: T) -> T {
+        return newStruct
+    }
+    
+    override func factory(jsonValue: [String: AnyObject]) throws -> T {
+        return try self.factory(jsonValue)
+    }
+}
+
+public class PolyClassRule<T: AnyObject>: Rule {
+    public typealias V = T
+    
+    private typealias CheckRuleClosure = ([String: AnyObject]) -> (([String: AnyObject]) throws -> T)?
+    
+    private var ruleClosures = [CheckRuleClosure]()
+    
+    public func type<R: Rule>(check: ([String: AnyObject])->Bool, rule: R) -> Self {
+        ruleClosures.append({ json in
+            if check(json) {
+                return { json in
+                    // WORKAROUND: there is no ability in swift to constraint to child of a generic type,
+                    // so let's check it in runtime
+                    guard let t = try rule.validate(json) as? T else {
+                        throw RuleError.InvalidJSONType("Object of unexpected type validated: \"\(R.V.self)\". Expected child of \(T.self).", nil)
+                    }
+                    return t
+                }
+            }
+            return nil
+        })
+        
+        return self
+    }
+    
+    public func validate(jsonValue: AnyObject) throws -> T {
+        guard let json = jsonValue as? [String: AnyObject] else {
+            throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
+        }
+        
+        for ruleClosure in ruleClosures {
+            if let ruleValidate = ruleClosure(json) {
+                return try ruleValidate(json)
+            }
+        }
+        
+        throw RuleError.ExpectedNotFound("Could not found matching type for \(T.self) in dictionary: \(json)", nil)
+    }
+    
+    public func dump(value: V) throws -> AnyObject {
+        fatalError("Not implemented yet")
     }
 }
 
