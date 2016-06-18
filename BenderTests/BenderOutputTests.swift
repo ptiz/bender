@@ -30,30 +30,6 @@ import XCTest
 import Quick
 import Nimble
 
-extension Passports {
-    convenience init(numbers: [Int], items: [Passport]) {
-        self.init()
-        self.items = items
-        self.numbers = numbers
-    }
-}
-
-extension Passport {
-    convenience init(number: Int?, issuedBy: String, valid: Bool) {
-        self.init()
-        self.issuedBy = issuedBy
-        self.number = number
-        self.valid = valid
-    }
-}
-
-extension Person {
-    convenience init(passport: Passport) {
-        self.init()
-        self.passport = passport
-    }
-}
-
 class BenderOutTests: QuickSpec {
         
     override func spec() {
@@ -179,6 +155,26 @@ class BenderOutTests: QuickSpec {
                 expect(newP.items[2].issuedBy).to(equal("Nobody"))
                 expect(newP.items[2].valid).to(equal(true))
             }
+            
+            it("should be able to dump array with polymorphic members") {
+                let c = ClassRule(Circle())
+                    .optional("type", StringRule) { _ in "circle" }
+                    .expect("name", StringRule) { $0.name }
+                    .expect("radius", FloatRule) { $0.radius }
+                
+                let s = ClassRule(Square())
+                    .optional("type", StringRule) { _ in "square" }
+                    .expect("name", StringRule) { $0.name }
+                    .expect("size", FloatRule) { $0.size }
+                
+                let check = StructRule(ref(""))
+                    .expect("type", StringRule) { $0.value = $1 }
+                
+                let r = PolyClassRule<Figure>()
+                    .type({ try! check.validate($0) == "circle" }, rule: c)
+                    .type({ try! check.validate($0) == "square" }, rule: s)
+                
+            }
         }
      
         describe("Enum dump") {
@@ -239,3 +235,28 @@ class BenderOutTests: QuickSpec {
     }
 
 }
+
+extension Passports {
+    convenience init(numbers: [Int], items: [Passport]) {
+        self.init()
+        self.items = items
+        self.numbers = numbers
+    }
+}
+
+extension Passport {
+    convenience init(number: Int?, issuedBy: String, valid: Bool) {
+        self.init()
+        self.issuedBy = issuedBy
+        self.number = number
+        self.valid = valid
+    }
+}
+
+extension Person {
+    convenience init(passport: Passport) {
+        self.init()
+        self.passport = passport
+    }
+}
+

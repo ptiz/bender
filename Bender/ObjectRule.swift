@@ -436,15 +436,19 @@ public class ContextClassRule<T>: ObjectRule<T, T> {
     }
 }
 
+//TODO: remove AnyObject requirement for protocols and think about custom type cast closure in each "type" method 
 public class PolyClassRule<T: AnyObject>: Rule {
     public typealias V = T
     
     private typealias CheckRuleClosure = ([String: AnyObject]) -> (([String: AnyObject]) throws -> T)?
+    private typealias DumpRuleClosure = (V) throws -> AnyObject?
     
-    private var ruleClosures = [CheckRuleClosure]()
+    private var checkRuleClosures = [CheckRuleClosure]()
+    private var dumpRuleClosures = [DumpRuleClosure]()
     
+    //TODO: add "checker" function/class family
     public func type<R: Rule>(check: ([String: AnyObject])->Bool, rule: R) -> Self {
-        ruleClosures.append({ json in
+        checkRuleClosures.append({ json in
             if check(json) {
                 return { json in
                     // WORKAROUND: there is no ability in swift to constraint to child of a generic type,
@@ -458,6 +462,13 @@ public class PolyClassRule<T: AnyObject>: Rule {
             return nil
         })
         
+        dumpRuleClosures.append({ value in
+            if let v = value as? R.V {
+                return try rule.dump(v)
+            }
+            return nil
+        })
+        
         return self
     }
     
@@ -466,7 +477,7 @@ public class PolyClassRule<T: AnyObject>: Rule {
             throw RuleError.InvalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected dictionary \(T.self).", nil)
         }
         
-        for ruleClosure in ruleClosures {
+        for ruleClosure in checkRuleClosures {
             if let ruleValidate = ruleClosure(json) {
                 return try ruleValidate(json)
             }
@@ -476,7 +487,12 @@ public class PolyClassRule<T: AnyObject>: Rule {
     }
     
     public func dump(value: V) throws -> AnyObject {
-        fatalError("Not implemented yet")
+        for rule in dumpRuleClosures {
+            if let obj = try rule(value) {
+                return obj
+            }
+        }
+        throw RuleError.InvalidDump("Unable to find rule for value \(value).", nil)
     }
 }
 
