@@ -174,6 +174,14 @@ class BenderOutTests: QuickSpec {
                     .type({ try! check.validate($0) == "circle" }, rule: c)
                     .type({ try! check.validate($0) == "square" }, rule: s)
                 
+                let a = ArrayRule(itemRule: r)
+                
+                let figures = [makeSquare("the square", size: 13.0), makeCircle("the circle", radius: 14.0)]
+                
+                let json = try! a.dump(figures)
+
+                expect(json).toNot(beNil())
+                expect(json.count).to(equal(2))
             }
         }
      

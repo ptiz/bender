@@ -594,3 +594,17 @@ class Circle: Figure {
 class Square: Figure {
     var size: Float!
 }
+
+func makeSquare(name: String, size: Float) -> Square {
+    let square = Square()
+    square.name = name
+    square.size = size
+    return square
+}
+
+func makeCircle(name: String, radius: Float) -> Circle {
+    let circle = Circle()
+    circle.name = name
+    circle.radius = radius
+    return circle
+}
