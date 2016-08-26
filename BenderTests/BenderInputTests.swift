@@ -70,6 +70,29 @@ class BenderInTests: QuickSpec {
             }
         }
         
+        describe("Paths through arrays") {
+            it("Paths through arrays") {
+                
+                let jsonData = dataFromFile("pathsThroughArrays")
+                
+                let hotelData = ClassRule(HotelData())
+                    .expect("rooms"/0, IntRule, { $0.firstRoomNumber = $1 })
+                    .expect("clients"/1/"name", StringRule, { $0.secondClientName = $1 })
+                    .expect("journal"/"rooms"/1/"furniture"/1, StringRule, { $0.furnitureName = $1 })
+                    .expect("journal"/"schedule"/0/2/1, IntRule, { $0.occupiedRoom = $1 })
+                do {
+                    let hotel = try hotelData.validateData(jsonData)
+                    
+                    expect(hotel.firstRoomNumber).to(equal(123))
+                    expect(hotel.secondClientName).to(equal("Alisa"))
+                    expect(hotel.furnitureName).to(equal("bed"))
+                    expect(hotel.occupiedRoom).to(equal(234))
+                } catch let err {
+                    expect(false).to(equal(true), description: "\(err)")
+                }
+            }
+        }
+        
         describe("Basic struct validation") {
             it("should perform nested struct validating and binding") {
                 
@@ -489,6 +512,13 @@ func jsonFromFile(name: String) -> AnyObject {
 
 func dataFromFile(name: String) -> NSData? {
     return NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)
+}
+
+class HotelData {
+    var firstRoomNumber: Int!
+    var secondClientName: String!
+    var furnitureName: String!
+    var occupiedRoom: Int!
 }
 
 class Passport {

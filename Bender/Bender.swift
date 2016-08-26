@@ -835,35 +835,50 @@ public class StringifiedJSONRule<R: Rule>: Rule {
 }
 
 public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible, CustomStringConvertible {
+    public enum PathElement: CustomStringConvertible {
+        case DictionaryKey(String)
+        case ArrayIndex(Int)
+        
+        public var description: String {
+            var result = ""
+            if case .DictionaryKey(let value) = self {
+                result = value
+            }
+            if case .ArrayIndex(let value) = self {
+                result = "\(value)"
+            }
+            return result
+        }
+    }
     
-    public let elements: [String]
+    public let elements: [PathElement]
+    
+    public init(_ value: [PathElement]) {
+        elements = value
+    }
     
     public init(unicodeScalarLiteral value: String) {
-        elements = [value]
+        elements = [PathElement.DictionaryKey(value)]
     }
     
     public init(extendedGraphemeClusterLiteral value: String) {
-        elements = [value]
+        elements = [PathElement.DictionaryKey(value)]
     }
     
     public init(stringLiteral value: String) {
-        elements = [value]
+        elements = [PathElement.DictionaryKey(value)]
     }
     
     public init(arrayLiteral elements: String...) {
-        self.elements = elements
+        self.elements = elements.map({ PathElement.DictionaryKey($0) })
     }
     
     public init(_ elements: [String]) {
-        self.elements = elements
+        self.elements = elements.map({ PathElement.DictionaryKey($0) })
     }
     
     public var description: String {
-        var str = elements.first ?? ""
-        for index in 1..<elements.count {
-            str += "/\(elements[index])"
-        }
-        return str
+        return elements.map({ "\($0)" }).joinWithSeparator("/")
     }
     
     public func tail() -> JSONPath {
@@ -874,11 +889,12 @@ public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible, Custo
 func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     var currentObject: AnyObject? = object
     for pathItem in path.elements {
-        guard let currentDict = currentObject as? [String: AnyObject] else {
-            return nil
-        }
-        if let next = currentDict[pathItem] where !(next is NSNull) {
+        if let currentDict = currentObject as? [String: AnyObject], case .DictionaryKey(let item) = pathItem, let next = currentDict[item] where !(next is NSNull) {
             currentObject = next
+            continue
+        }
+        if let currentDict = currentObject as? [AnyObject], case .ArrayIndex(let index) = pathItem where !(currentDict[index] is NSNull) {
+            currentObject = currentDict[index]
             continue
         }
         currentObject = nil
@@ -886,24 +902,56 @@ func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     return currentObject
 }
 
-func setInDictionary(dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
-    var traverseDictionary = dictionary
+func setInCollection(collection: AnyObject, object: AnyObject?, atPath path: JSONPath) throws -> AnyObject {
+    if let dictionary = collection as? [String: AnyObject], let first = path.elements.first, case .DictionaryKey(_) = first {
+        return try setInDictionary(dictionary, object: object, atPath: path)
+    }
+    if let array = collection as? [AnyObject], let first = path.elements.first, case .ArrayIndex(_) = first {
+        return try setInArray(array, object: object, atPath: path)
+    }
+    throw RuleError.InvalidDump("\"\(path.elements.first)\" is not a dictionary and is not an array.", nil)
+}
+
+func setInArray(array: [AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [AnyObject] {
+    var murableArray = array
+    guard let first = path.elements.first, case .ArrayIndex(let index) = first else {
+        throw RuleError.InvalidDump("\"\(path.elements.last)\" is not an array.", nil)
+    }
+    guard let notNilObject = object else {
+        throw RuleError.InvalidDump("Object for path \"\(path.elements.last)\" is nil.", nil)
+    }
     if path.elements.count == 1 {
-        traverseDictionary[path.elements.last!] = object
-        return traverseDictionary
+        murableArray[index] = notNilObject
+        return murableArray
     }
     
-    let pathElement = path.elements.first!
-    if let nestedObject = traverseDictionary[pathElement] {
-        guard let existingDictionary = nestedObject as? [String: AnyObject] else {
-            throw RuleError.InvalidDump("\"\(pathElement)\" is not a dictionary.", nil)
-        }
-        traverseDictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail())
-        return traverseDictionary
+    if murableArray.count > index {
+        let nestedObject = murableArray[index]
+        murableArray[index] = try setInCollection(nestedObject, object: object, atPath: path.tail())
+        return murableArray
     }
     
-    traverseDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
-    return traverseDictionary
+    murableArray += [try setInArray([], object: object, atPath: path.tail())]
+    return murableArray
+}
+
+func setInDictionary(dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+    var mutableDictionary = dictionary
+    guard let first = path.elements.first, case .DictionaryKey(let pathElement) = first else {
+        throw RuleError.InvalidDump("\"\(path.elements.last)\" is not a dictionary.", nil)
+    }
+    if path.elements.count == 1 {
+        mutableDictionary[pathElement] = object
+        return mutableDictionary
+    }
+    
+    if let nestedObject = mutableDictionary[pathElement] {
+        mutableDictionary[pathElement] = try setInCollection(nestedObject, object: object, atPath: path.tail())
+        return mutableDictionary
+    }
+    
+    mutableDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
+    return mutableDictionary
 }
 
 /**
@@ -983,6 +1031,9 @@ public extension Rule {
  - returns: newly created JSONPath with 'right' appended to it
  */
 public func /(path: JSONPath, right: String) -> JSONPath {
-    return JSONPath(path.elements + [right])
+    return JSONPath(path.elements + [.DictionaryKey(right)])
 }
 
+public func /(path: JSONPath, right: Int) -> JSONPath {
+    return JSONPath(path.elements + [.ArrayIndex(right)])
+}
