@@ -902,56 +902,29 @@ func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     return currentObject
 }
 
-func setInCollection(collection: AnyObject, object: AnyObject?, atPath path: JSONPath) throws -> AnyObject {
-    if let dictionary = collection as? [String: AnyObject], let first = path.elements.first, case .DictionaryKey(_) = first {
-        return try setInDictionary(dictionary, object: object, atPath: path)
-    }
-    if let array = collection as? [AnyObject], let first = path.elements.first, case .ArrayIndex(_) = first {
-        return try setInArray(array, object: object, atPath: path)
-    }
-    throw RuleError.InvalidDump("\"\(path.elements.first)\" is not a dictionary and is not an array.", nil)
-}
-
-func setInArray(array: [AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [AnyObject] {
-    var murableArray = array
-    guard let first = path.elements.first, case .ArrayIndex(let index) = first else {
-        throw RuleError.InvalidDump("\"\(path.elements.last)\" is not an array.", nil)
-    }
-    guard let notNilObject = object else {
-        throw RuleError.InvalidDump("Object for path \"\(path.elements.last)\" is nil.", nil)
-    }
-    if path.elements.count == 1 {
-        murableArray[index] = notNilObject
-        return murableArray
-    }
-    
-    if murableArray.count > index {
-        let nestedObject = murableArray[index]
-        murableArray[index] = try setInCollection(nestedObject, object: object, atPath: path.tail())
-        return murableArray
-    }
-    
-    murableArray += [try setInArray([], object: object, atPath: path.tail())]
-    return murableArray
-}
-
 func setInDictionary(dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
-    var mutableDictionary = dictionary
-    guard let first = path.elements.first, case .DictionaryKey(let pathElement) = first else {
-        throw RuleError.InvalidDump("\"\(path.elements.last)\" is not a dictionary.", nil)
+    guard let first = path.elements.first else {
+        throw RuleError.InvalidDump("Unexpectedly count of path elements is 0", nil)
     }
+    guard case .DictionaryKey(let pathElement) = first else {
+        throw RuleError.InvalidDump("Dump of array is not implemented. Element \"\(first)\" is not a dictionary.", nil)
+    }
+    var traverseDictionary = dictionary
     if path.elements.count == 1 {
-        mutableDictionary[pathElement] = object
-        return mutableDictionary
+        traverseDictionary[pathElement] = object
+        return traverseDictionary
     }
     
-    if let nestedObject = mutableDictionary[pathElement] {
-        mutableDictionary[pathElement] = try setInCollection(nestedObject, object: object, atPath: path.tail())
-        return mutableDictionary
+    if let nestedObject = traverseDictionary[pathElement] {
+        guard let existingDictionary = nestedObject as? [String: AnyObject] else {
+            throw RuleError.InvalidDump("\"\(pathElement)\" is not a dictionary.", nil)
+        }
+        traverseDictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail())
+        return traverseDictionary
     }
     
-    mutableDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
-    return mutableDictionary
+    traverseDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
+    return traverseDictionary
 }
 
 /**
