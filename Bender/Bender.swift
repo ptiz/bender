@@ -893,8 +893,8 @@ func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
             currentObject = next
             continue
         }
-        if let currentDict = currentObject as? [AnyObject], case .ArrayIndex(let index) = pathItem where !(currentDict[index] is NSNull) {
-            currentObject = currentDict[index]
+        if let currentArray = currentObject as? [AnyObject], case .ArrayIndex(let index) = pathItem where currentArray.count > index && !(currentArray[index] is NSNull) {
+            currentObject = currentArray[index]
             continue
         }
         currentObject = nil
@@ -1007,6 +1007,6 @@ public func /(path: JSONPath, right: String) -> JSONPath {
     return JSONPath(path.elements + [.DictionaryKey(right)])
 }
 
-public func /(path: JSONPath, right: Int) -> JSONPath {
-    return JSONPath(path.elements + [.ArrayIndex(right)])
+public func /(path: JSONPath, right: UInt) -> JSONPath {
+    return JSONPath(path.elements + [.ArrayIndex(Int(right))])
 }

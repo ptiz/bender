@@ -71,8 +71,7 @@ class BenderInTests: QuickSpec {
         }
         
         describe("Paths through arrays") {
-            it("Paths through arrays") {
-                
+            it("should fetch right values") {
                 let jsonData = dataFromFile("pathsThroughArrays")
                 
                 let hotelData = ClassRule(HotelData())
@@ -90,6 +89,11 @@ class BenderInTests: QuickSpec {
                 } catch let err {
                     expect(false).to(equal(true), description: "\(err)")
                 }
+            }
+            it("should throws exception for index that great or equal than count") {
+                let jsonData = dataFromFile("pathsThroughArrays")
+                let hotelData = ClassRule(HotelData()).expect("rooms"/100, IntRule, { $0.firstRoomNumber = $1 })
+                expect{ try hotelData.validateData(jsonData) }.to(throwError(RuleError.InvalidJSONType("", nil)))
             }
         }
         
