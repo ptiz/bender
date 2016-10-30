@@ -67,7 +67,7 @@ class BenderOutTests: QuickSpec {
                     .expect("name", StringRule, { $0.value.name = $1 }) { $0.name }
                     .expect("size", Int64Rule, { $0.value.size = $1 }) { $0.size }
         
-                folderRule
+                let _ = folderRule
                     .optional("folders", ArrayRule(itemRule: folderRule), { $0.value.folders = $1 }) { $0.folders }
                 
                 let f = Folder(name: "Folder 1", size: 10, folders: [
@@ -88,7 +88,7 @@ class BenderOutTests: QuickSpec {
                     .expect("name", StringRule) { $0.name }
                     .expect("size", Int64Rule) { $0.size }
                 
-                folderRule
+                let _ = folderRule
                     .optional("folders", ArrayRule(itemRule: folderRule)) { $0.folders }
                 
                 let f = Folder(name: "Folder 1", size: 10, folders: [
@@ -113,10 +113,9 @@ class BenderOutTests: QuickSpec {
                 
                 let pass = Passport(number: nil, issuedBy: "One", valid: false)
                 
-                let passJson = try! passportRule.dump(pass)
-                
-                expect(passJson["issuedBy"]).to(equal("One"))
-                expect(passJson["number"]).to(beAKindOf(NSNull.self))
+                let passJson = try! passportRule.dump(pass) as! [String: AnyObject]
+                expect(passJson["issuedBy"] as? String).to(equal("One"))
+                expect(passJson["number"] as? NSNull).toNot(beNil())
             
                 let passString = try! StringifiedJSONRule(nestedRule: passportRule).dump(pass) as! String
                 
@@ -141,7 +140,7 @@ class BenderOutTests: QuickSpec {
                     .optional("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.value.name = $1 }
                 
                 let data = try? m.dump(userStruct) as! [String: AnyObject]
-                let user = try? m.validate(data!)
+                let user = try? m.validate(data as AnyObject)
                 
                 expect(user).toNot(beNil())
                 expect(user?.id).to(equal(userStruct.id))
@@ -187,14 +186,14 @@ class BenderOutTests: QuickSpec {
             it("should performs enum dump of any internal type") {
                 
                 let enumRule = EnumRule<IssuedBy>()
-                    .option("FMS", .FMS)
-                    .option("SMS", .SMS)
-                    .option("OPG", .OPG)
-                    .option(0, .Unknown)
+                    .option("FMS", .fms)
+                    .option("SMS", .sms)
+                    .option("OPG", .opg)
+                    .option(0, .unknown)
                 
                 let intEnumRule = EnumRule<Active>()
-                    .option(0, .Inactive)
-                    .option(1, .Active)
+                    .option(0, .inactive)
+                    .option(1, .active)
                 
                 let testRule = StructRule(ref(Pass()))
                     .expect("issuedBy", enumRule, { $0.value.issuedBy = $1 }) { $0.issuedBy }
@@ -203,17 +202,17 @@ class BenderOutTests: QuickSpec {
                 let testRules = ArrayRule(itemRule: testRule)
                 
                 let rules = [
-                    Pass(issuedBy: .FMS, active: .Active),
-                    Pass(issuedBy: .OPG, active: .Inactive),
-                    Pass(issuedBy: .Unknown, active: .Inactive)
+                    Pass(issuedBy: .fms, active: .active),
+                    Pass(issuedBy: .opg, active: .inactive),
+                    Pass(issuedBy: .unknown, active: .inactive)
                 ]
                 
                 let d = try! testRules.dump(rules)
                 let newRules = try! testRules.validate(d)
                 
                 expect(newRules.count).to(equal(3))
-                expect(newRules[2].issuedBy).to(equal(IssuedBy.Unknown))
-                expect(newRules[2].active).to(equal(Active.Inactive))
+                expect(newRules[2].issuedBy).to(equal(IssuedBy.unknown))
+                expect(newRules[2].active).to(equal(Active.inactive))
             }
         }
     
