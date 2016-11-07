@@ -3,7 +3,8 @@
 //  Bender
 //
 //  Created by Evgenii Kamyshanov on 04.01.16.
-//  Copyright © 2016 Evgenii Kamyshanov.
+//  Original work Copyright © 2016 Evgenii Kamyshanov
+//  Modified work Copyright © 2016 Sviatoslav Bulgakov
 //
 //  The MIT License (MIT)
 //
@@ -835,35 +836,46 @@ public class StringifiedJSONRule<R: Rule>: Rule {
 }
 
 public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible, CustomStringConvertible {
+    public enum PathElement: CustomStringConvertible {
+        case DictionaryKey(String)
+        case ArrayIndex(Int)
+        
+        public var description: String {
+            switch self {
+            case .DictionaryKey(let value): return value
+            case .ArrayIndex(let value): return "\(value)"
+            }
+        }
+    }
     
-    public let elements: [String]
+    public let elements: [PathElement]
+    
+    public init(_ value: [PathElement]) {
+        elements = value
+    }
     
     public init(unicodeScalarLiteral value: String) {
-        elements = [value]
+        elements = [PathElement.DictionaryKey(value)]
     }
     
     public init(extendedGraphemeClusterLiteral value: String) {
-        elements = [value]
+        elements = [PathElement.DictionaryKey(value)]
     }
     
     public init(stringLiteral value: String) {
-        elements = [value]
+        elements = [PathElement.DictionaryKey(value)]
     }
     
     public init(arrayLiteral elements: String...) {
-        self.elements = elements
+        self.elements = elements.map({ PathElement.DictionaryKey($0) })
     }
     
     public init(_ elements: [String]) {
-        self.elements = elements
+        self.elements = elements.map({ PathElement.DictionaryKey($0) })
     }
     
     public var description: String {
-        var str = elements.first ?? ""
-        for index in 1..<elements.count {
-            str += "/\(elements[index])"
-        }
-        return str
+        return elements.map({ "\($0)" }).joinWithSeparator("/")
     }
     
     public func tail() -> JSONPath {
@@ -874,11 +886,12 @@ public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible, Custo
 func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     var currentObject: AnyObject? = object
     for pathItem in path.elements {
-        guard let currentDict = currentObject as? [String: AnyObject] else {
-            return nil
-        }
-        if let next = currentDict[pathItem] where !(next is NSNull) {
+        if let currentDict = currentObject as? [String: AnyObject], case .DictionaryKey(let item) = pathItem, let next = currentDict[item] where !(next is NSNull) {
             currentObject = next
+            continue
+        }
+        if let currentArray = currentObject as? [AnyObject], case .ArrayIndex(let index) = pathItem where currentArray.count > index && !(currentArray[index] is NSNull) {
+            currentObject = currentArray[index]
             continue
         }
         currentObject = nil
@@ -887,13 +900,18 @@ func objectIn(object: AnyObject, atPath path: JSONPath) -> AnyObject? {
 }
 
 func setInDictionary(dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+    guard let first = path.elements.first else {
+        throw RuleError.InvalidDump("Unexpectedly count of path elements is 0", nil)
+    }
+    guard case .DictionaryKey(let pathElement) = first else {
+        throw RuleError.InvalidDump("Dump of array is not implemented. Element \"\(first)\" is not a dictionary.", nil)
+    }
     var traverseDictionary = dictionary
     if path.elements.count == 1 {
-        traverseDictionary[path.elements.last!] = object
+        traverseDictionary[pathElement] = object
         return traverseDictionary
     }
     
-    let pathElement = path.elements.first!
     if let nestedObject = traverseDictionary[pathElement] {
         guard let existingDictionary = nestedObject as? [String: AnyObject] else {
             throw RuleError.InvalidDump("\"\(pathElement)\" is not a dictionary.", nil)
@@ -983,6 +1001,9 @@ public extension Rule {
  - returns: newly created JSONPath with 'right' appended to it
  */
 public func /(path: JSONPath, right: String) -> JSONPath {
-    return JSONPath(path.elements + [right])
+    return JSONPath(path.elements + [.DictionaryKey(right)])
 }
 
+public func /(path: JSONPath, right: UInt) -> JSONPath {
+    return JSONPath(path.elements + [.ArrayIndex(Int(right))])
+}
