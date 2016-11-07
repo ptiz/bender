@@ -3,7 +3,8 @@
 //  Bender
 //
 //  Created by Evgenii Kamyshanov on 04.01.16.
-//  Copyright © 2016 Evgenii Kamyshanov.
+//  Original work Copyright © 2016 Evgenii Kamyshanov
+//  Modified work Copyright © 2016 Sviatoslav Bulgakov
 //
 //  The MIT License (MIT)
 //
@@ -840,14 +841,10 @@ public struct JSONPath: StringLiteralConvertible, ArrayLiteralConvertible, Custo
         case ArrayIndex(Int)
         
         public var description: String {
-            var result = ""
-            if case .DictionaryKey(let value) = self {
-                result = value
+            switch self {
+            case .DictionaryKey(let value): return value
+            case .ArrayIndex(let value): return "\(value)"
             }
-            if case .ArrayIndex(let value) = self {
-                result = "\(value)"
-            }
-            return result
         }
     }
     

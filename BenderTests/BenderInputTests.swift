@@ -30,8 +30,6 @@ import XCTest
 import Quick
 import Nimble
 
-@testable import Bender
-
 class BenderInTests: QuickSpec {
     
     override func spec() {
@@ -72,7 +70,7 @@ class BenderInTests: QuickSpec {
         
         describe("Paths through arrays") {
             it("should fetch right values") {
-                let jsonData = dataFromFile("pathsThroughArrays")
+                let jsonData = dataFromFile("paths_through_arrays")
                 
                 let hotelData = ClassRule(HotelData())
                     .expect("rooms"/0, IntRule, { $0.firstRoomNumber = $1 })
@@ -91,7 +89,7 @@ class BenderInTests: QuickSpec {
                 }
             }
             it("should throws exception for index that great or equal than count") {
-                let jsonData = dataFromFile("pathsThroughArrays")
+                let jsonData = dataFromFile("paths_through_arrays")
                 let hotelData = ClassRule(HotelData()).expect("rooms"/100, IntRule, { $0.firstRoomNumber = $1 })
                 expect{ try hotelData.validateData(jsonData) }.to(throwError(RuleError.InvalidJSONType("", nil)))
             }
