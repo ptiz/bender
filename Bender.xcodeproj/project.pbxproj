@@ -7,11 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		39D37AD8EA08CD5E63EB486A /* Pods_Bender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF4C94BE2D06857D2FFF90F0 /* Pods_Bender.framework */; };
-		45AB6AA5124B320B85642C6E /* Pods_BenderTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */; };
+		275234561DD0A3E60096F1D0 /* Nimble.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275234511DD0A3620096F1D0 /* Nimble.framework */; };
+		275234571DD0A3E60096F1D0 /* Quick.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275234521DD0A3620096F1D0 /* Quick.framework */; };
 		5B05ABA91C54F71100339915 /* BenderOutputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B05ABA81C54F71100339915 /* BenderOutputTests.swift */; };
 		5B3C4B3E1C7A6A070032BA13 /* defaults_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */; };
-		5B54EF0B1C3A90AE0072B2A8 /* Bender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B54EF001C3A90AE0072B2A8 /* Bender.framework */; };
 		5B54EF101C3A90AE0072B2A8 /* BenderInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF0F1C3A90AE0072B2A8 /* BenderInputTests.swift */; };
 		5B54EF1B1C3A90FD0072B2A8 /* Bender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B54EF1A1C3A90FD0072B2A8 /* Bender.swift */; };
 		5B54EF1D1C3D38A60072B2A8 /* basic_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5B54EF1C1C3D38A60072B2A8 /* basic_test.json */; };
@@ -36,7 +35,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BenderTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		275234511DD0A3620096F1D0 /* Nimble.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Nimble.framework; path = Carthage/Build/iOS/Nimble.framework; sourceTree = "<group>"; };
+		275234521DD0A3620096F1D0 /* Quick.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Quick.framework; path = Carthage/Build/iOS/Quick.framework; sourceTree = "<group>"; };
 		5B05ABA81C54F71100339915 /* BenderOutputTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BenderOutputTests.swift; sourceTree = "<group>"; };
 		5B3C4B3D1C7A6A070032BA13 /* defaults_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = defaults_test.json; sourceTree = "<group>"; };
 		5B54EF001C3A90AE0072B2A8 /* Bender.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Bender.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -54,11 +54,6 @@
 		5BAEB5111C47D0480044C0A7 /* recursive_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = recursive_test.json; sourceTree = "<group>"; };
 		5BCE654F1C7F9BF6000603ED /* array_skip_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = array_skip_test.json; sourceTree = "<group>"; };
 		5BCE65541C8326EB000603ED /* path_test.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = path_test.json; sourceTree = "<group>"; };
-		6B17FF595E1FE853707766E6 /* Pods-BenderTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BenderTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-BenderTests/Pods-BenderTests.debug.xcconfig"; sourceTree = "<group>"; };
-		BF4C94BE2D06857D2FFF90F0 /* Pods_Bender.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Bender.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		E91A2CB5F3D8B59E81A40C4D /* Pods-Bender.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Bender.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Bender/Pods-Bender.debug.xcconfig"; sourceTree = "<group>"; };
-		F14D1929C1EE091EB4D0A615 /* Pods-Bender.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Bender.release.xcconfig"; path = "Pods/Target Support Files/Pods-Bender/Pods-Bender.release.xcconfig"; sourceTree = "<group>"; };
-		FF38713AA0E03EF651054F86 /* Pods-BenderTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BenderTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-BenderTests/Pods-BenderTests.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,7 +61,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				39D37AD8EA08CD5E63EB486A /* Pods_Bender.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,19 +68,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B54EF0B1C3A90AE0072B2A8 /* Bender.framework in Frameworks */,
-				45AB6AA5124B320B85642C6E /* Pods_BenderTests.framework in Frameworks */,
+				275234561DD0A3E60096F1D0 /* Nimble.framework in Frameworks */,
+				275234571DD0A3E60096F1D0 /* Quick.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		3BEC423E6E3202A33D3E3466 /* Frameworks */ = {
+		275234481DD0A2480096F1D0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				1C08819D4FBCAAE3080F148B /* Pods_BenderTests.framework */,
-				BF4C94BE2D06857D2FFF90F0 /* Pods_Bender.framework */,
+				275234511DD0A3620096F1D0 /* Nimble.framework */,
+				275234521DD0A3620096F1D0 /* Quick.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -97,8 +91,7 @@
 				5B54EF021C3A90AE0072B2A8 /* Bender */,
 				5B54EF0E1C3A90AE0072B2A8 /* BenderTests */,
 				5B54EF011C3A90AE0072B2A8 /* Products */,
-				CF84E480FC05BA072782574B /* Pods */,
-				3BEC423E6E3202A33D3E3466 /* Frameworks */,
+				275234481DD0A2480096F1D0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -140,17 +133,6 @@
 			path = BenderTests;
 			sourceTree = "<group>";
 		};
-		CF84E480FC05BA072782574B /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				6B17FF595E1FE853707766E6 /* Pods-BenderTests.debug.xcconfig */,
-				FF38713AA0E03EF651054F86 /* Pods-BenderTests.release.xcconfig */,
-				E91A2CB5F3D8B59E81A40C4D /* Pods-Bender.debug.xcconfig */,
-				F14D1929C1EE091EB4D0A615 /* Pods-Bender.release.xcconfig */,
-			);
-			name = Pods;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -168,12 +150,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5B54EF141C3A90AE0072B2A8 /* Build configuration list for PBXNativeTarget "Bender" */;
 			buildPhases = (
-				C1325F3BCDEC26D4E7E96A5E /* [CP] Check Pods Manifest.lock */,
 				5B54EEFB1C3A90AE0072B2A8 /* Sources */,
 				5B54EEFC1C3A90AE0072B2A8 /* Frameworks */,
 				5B54EEFD1C3A90AE0072B2A8 /* Headers */,
 				5B54EEFE1C3A90AE0072B2A8 /* Resources */,
-				D667D65A3BE04CB232EAA452 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -188,12 +168,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5B54EF171C3A90AE0072B2A8 /* Build configuration list for PBXNativeTarget "BenderTests" */;
 			buildPhases = (
-				55E055208F544A3EBEFD1F4F /* [CP] Check Pods Manifest.lock */,
 				5B54EF061C3A90AE0072B2A8 /* Sources */,
 				5B54EF071C3A90AE0072B2A8 /* Frameworks */,
 				5B54EF081C3A90AE0072B2A8 /* Resources */,
-				BC24E694DE6DFB71DAC88777 /* [CP] Embed Pods Frameworks */,
-				D2F4D159380FD54BB269E52F /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -269,84 +246,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		55E055208F544A3EBEFD1F4F /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
-			showEnvVarsInLog = 0;
-		};
-		BC24E694DE6DFB71DAC88777 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-BenderTests/Pods-BenderTests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C1325F3BCDEC26D4E7E96A5E /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
-			showEnvVarsInLog = 0;
-		};
-		D2F4D159380FD54BB269E52F /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-BenderTests/Pods-BenderTests-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D667D65A3BE04CB232EAA452 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Bender/Pods-Bender-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5B54EEFB1C3A90AE0072B2A8 /* Sources */ = {
@@ -473,7 +372,6 @@
 		};
 		5B54EF151C3A90AE0072B2A8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E91A2CB5F3D8B59E81A40C4D /* Pods-Bender.debug.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
@@ -481,6 +379,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = Bender/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
@@ -495,7 +397,6 @@
 		};
 		5B54EF161C3A90AE0072B2A8 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F14D1929C1EE091EB4D0A615 /* Pods-Bender.release.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
@@ -503,6 +404,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = Bender/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
@@ -516,9 +421,12 @@
 		};
 		5B54EF181C3A90AE0072B2A8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 6B17FF595E1FE853707766E6 /* Pods-BenderTests.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = BenderTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamyshanov.BenderTests;
@@ -529,9 +437,12 @@
 		};
 		5B54EF191C3A90AE0072B2A8 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = FF38713AA0E03EF651054F86 /* Pods-BenderTests.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Carthage/Build/iOS",
+				);
 				INFOPLIST_FILE = BenderTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamyshanov.BenderTests;
