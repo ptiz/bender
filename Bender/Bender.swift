@@ -105,7 +105,7 @@ public protocol Rule {
 /**
  Base class for numeric validators
 */
-open class NumberRule<T>: Rule {
+public class NumberRule<T>: Rule {
     public typealias V = T
         
     public func validate(_ jsonValue: AnyObject) throws -> T {
@@ -127,7 +127,7 @@ open class NumberRule<T>: Rule {
 /**
  Validator for signed and unsigned integer numerics
 */
-open class IntegerRule<T: Integer>: NumberRule<T> {
+public class IntegerRule<T: Integer>: NumberRule<T> {
     let i: T = 0
     
     public override init() {
@@ -154,7 +154,7 @@ open class IntegerRule<T: Integer>: NumberRule<T> {
 /**
  Vaidator for floating point numerics
 */
-open class FloatingRule<T: ExpressibleByFloatLiteral>: NumberRule<T> {
+public class FloatingRule<T: ExpressibleByFloatLiteral>: NumberRule<T> {
     let f: T = 0.0
     
     public override init() {
@@ -173,7 +173,7 @@ open class FloatingRule<T: ExpressibleByFloatLiteral>: NumberRule<T> {
 /**
  Validator for any generic type that can be cast from NSValue automatically
 */
-open class TypeRule<T>: Rule {
+public class TypeRule<T>: Rule {
     public typealias V = T
     
     public init() {
@@ -211,7 +211,7 @@ public let StringRule = TypeRule<String>()
  Validator for compound types: classes or structs. Validates JSON struct for particular type T,
  which is passed by value of type RefT.
 */
-open class CompoundRule<T, RefT>: Rule {
+public class CompoundRule<T, RefT>: Rule {
     public typealias V = T
 
     fileprivate typealias LateBindClosure = (RefT) -> Void
@@ -568,7 +568,7 @@ open class CompoundRule<T, RefT>: Rule {
 /**
  Validator of compound JSON object with binding to reference type like class T. Reference type is T itself.
 */
-open class ClassRule<T>: CompoundRule<T, T> {
+public class ClassRule<T>: CompoundRule<T, T> {
     
     public override init( _ factory: @autoclosure @escaping ()->T) {
         super.init(factory)
@@ -582,7 +582,7 @@ open class ClassRule<T>: CompoundRule<T, T> {
 /**
  Validator of compound JSON object with binding to value type like struct T. Reference type is ref<T>.
 */
-open class StructRule<T>: CompoundRule<T, ref<T>> {
+public class StructRule<T>: CompoundRule<T, ref<T>> {
 
     public override init( _ factory: @autoclosure @escaping ()->ref<T>) {
         super.init(factory)
@@ -596,7 +596,7 @@ open class StructRule<T>: CompoundRule<T, ref<T>> {
 /**
  Validator for arrays of items of type T, that should be validated by rule of type R, i.e. where R.V == T.
 */
-open class ArrayRule<T, R: Rule>: Rule where R.V == T {
+public class ArrayRule<T, R: Rule>: Rule where R.V == T {
     public typealias V = [T]
 
     typealias ValidateClosure = (AnyObject) throws -> T
@@ -678,7 +678,7 @@ open class ArrayRule<T, R: Rule>: Rule where R.V == T {
  Validator for enum of type T. Checks that JSON value to be validated is equal to any option stored and .
  If all stored properties do not match, throws ValidateError.
 */
-open class EnumRule<T: Equatable>: Rule {
+public class EnumRule<T: Equatable>: Rule {
     public typealias V = T
     
     fileprivate var cases: [(AnyObject) throws -> T?] = []
@@ -772,7 +772,7 @@ open class EnumRule<T: Equatable>: Rule {
 /**
  Validator of JSON encoded into string like this: "\"field": \"value\"". Encoded JSON should be validated by given rule of type R.
 */
-open class StringifiedJSONRule<R: Rule>: Rule {
+public class StringifiedJSONRule<R: Rule>: Rule {
     public typealias V = R.V
     
     fileprivate let nestedRule: R
@@ -909,7 +909,7 @@ func setInDictionary(_ dictionary: [String: AnyObject], object: AnyObject?, atPa
 /**
  Generic class for boxing value type.
 */
-open class ref<T> {
+public class ref<T> {
     open var value: T
     
     public init(_ value: T) {
@@ -928,20 +928,20 @@ open class ref<T> {
  */
 func toAny<T>(_ t: T) throws -> AnyObject {
     switch t {
-    case let v as Int: return NSNumber(value: v as Int)
-    case let v as Int8: return NSNumber(value: v as Int8)
-    case let v as Int16: return NSNumber(value: v as Int16)
-    case let v as Int32: return NSNumber(value: v as Int32)
-    case let v as Int64: return NSNumber(value: v as Int64)
-    case let v as UInt: return NSNumber(value: v as UInt)
-    case let v as UInt8: return NSNumber(value: v as UInt8)
-    case let v as UInt16: return NSNumber(value: v as UInt16)
-    case let v as UInt32: return NSNumber(value: v as UInt32)
-    case let v as UInt64: return NSNumber(value: v as UInt64)
-    case let v as Bool: return NSNumber(value: v as Bool)
-    case let v as Float: return NSNumber(value: v as Float)
-    case let v as Double: return NSNumber(value: v as Double)
-    case let v as String: return v as AnyObject
+    case let v as Int: return NSNumber(value: v)
+    case let v as Int8: return NSNumber(value: v)
+    case let v as Int16: return NSNumber(value: v)
+    case let v as Int32: return NSNumber(value: v)
+    case let v as Int64: return NSNumber(value: v)
+    case let v as UInt: return NSNumber(value: v)
+    case let v as UInt8: return NSNumber(value: v)
+    case let v as UInt16: return NSNumber(value: v)
+    case let v as UInt32: return NSNumber(value: v)
+    case let v as UInt64: return NSNumber(value: v)
+    case let v as Bool: return NSNumber(value: v)
+    case let v as Float: return NSNumber(value: v)
+    case let v as Double: return NSNumber(value: v)
+    case let v as String: return v as NSString
     default:
         throw RuleError.invalidDump("Unable to dump value of unknown type: \(t)", nil)
     }

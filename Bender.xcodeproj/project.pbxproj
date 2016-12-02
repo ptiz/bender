@@ -22,6 +22,7 @@
 		5BAEB5121C47D0480044C0A7 /* recursive_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BAEB5111C47D0480044C0A7 /* recursive_test.json */; };
 		5BCE65501C7F9BF6000603ED /* array_skip_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BCE654F1C7F9BF6000603ED /* array_skip_test.json */; };
 		5BCE65551C8326EB000603ED /* path_test.json in Resources */ = {isa = PBXBuildFile; fileRef = 5BCE65541C8326EB000603ED /* path_test.json */; };
+		C141AD7F1DF17F90005698F2 /* Bender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B54EF001C3A90AE0072B2A8 /* Bender.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C141AD7F1DF17F90005698F2 /* Bender.framework in Frameworks */,
 				275234561DD0A3E60096F1D0 /* Nimble.framework in Frameworks */,
 				275234571DD0A3E60096F1D0 /* Quick.framework in Frameworks */,
 			);
@@ -171,6 +173,7 @@
 				5B54EF061C3A90AE0072B2A8 /* Sources */,
 				5B54EF071C3A90AE0072B2A8 /* Frameworks */,
 				5B54EF081C3A90AE0072B2A8 /* Resources */,
+				C141AD7E1DF17F3B005698F2 /* Copy Carthage Frameworks */,
 			);
 			buildRules = (
 			);
@@ -246,6 +249,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C141AD7E1DF17F3B005698F2 /* Copy Carthage Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Carthage/Build/iOS/Quick.framework",
+				"$(SRCROOT)/Carthage/Build/iOS/Nimble.framework",
+			);
+			name = "Copy Carthage Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "carthage copy-frameworks";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5B54EEFB1C3A90AE0072B2A8 /* Sources */ = {
@@ -385,7 +407,7 @@
 				);
 				INFOPLIST_FILE = Bender/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamyshanov.Bender;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -410,7 +432,7 @@
 				);
 				INFOPLIST_FILE = Bender/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kamyshanov.Bender;
 				PRODUCT_NAME = "$(TARGET_NAME)";
