@@ -61,8 +61,8 @@ class BenderInTests: QuickSpec {
             
             it("should create intermediate dictionaries for path if needed") {
                 let path = "message"/"payload"/"createdBy"/"user"/"id"
-                let data = try? setInDictionary([:], object: "123456", atPath: path)
-                let obj = objectIn(data!, atPath: path) as? String
+                let data = try? setInDictionary([:], object: "123456" as AnyObject?, atPath: path)
+                let obj = objectIn(data as AnyObject, atPath: path) as? String
                 
                 expect(obj).to(equal("123456"))
             }
@@ -91,7 +91,7 @@ class BenderInTests: QuickSpec {
             it("should throws exception for index that great or equal than count") {
                 let jsonData = dataFromFile("paths_through_arrays")
                 let hotelData = ClassRule(HotelData()).expect("rooms"/100, IntRule, { $0.firstRoomNumber = $1 })
-                expect{ try hotelData.validateData(jsonData) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try hotelData.validateData(jsonData) }.to(throwError(RuleError.invalidJSONType("", nil)))
             }
         }
         
@@ -137,7 +137,7 @@ class BenderInTests: QuickSpec {
                     .expect("name", StringRule) { $0.value.name = $1 }
                     .expect("size", Int64Rule) { $0.value.size = $1 }
                 
-                folderRule
+                let _ = folderRule
                     .optional("folders", ArrayRule(itemRule: folderRule)) { $0.value.folders = $1 }
                 
                 do {
@@ -166,7 +166,7 @@ class BenderInTests: QuickSpec {
                 let personRule = ClassRule(Person())
                     .expect("passport", passportRule) { $0.passport = $1 }
 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.invalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
                         let stack = error.unwindStack()
                         expect(stack.count).to(equal(2))
@@ -181,7 +181,7 @@ class BenderInTests: QuickSpec {
                 let personRule = ClassRule(Person())
                     .expect("name", FloatRule) { $0.age = $1 }
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.invalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
                         expect(error.description).to(equal("Unable to validate mandatory field \"name\" for Person.\nValue of unexpected type found: \"John\". Expected Float."))
                     })
@@ -195,7 +195,7 @@ class BenderInTests: QuickSpec {
                     .required("name", StringRule) { $0 == "John" }
                     .required("age", FloatRule) { $0 == 100.0 } //actual 37.5
 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.UnmetRequirement("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.unmetRequirement("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
                     expect(error.description).to(equal("Requirement was not met for field \"age\" with value \"37.5\""))
                     })                
@@ -348,7 +348,7 @@ class BenderInTests: QuickSpec {
                     .expect("passports", passportArrayRule, { $0.items = $1 })
                     .expect("numbers", ArrayRule(itemRule: IntRule), { $0.numbers = $1 })
                 
-                expect{ try passportsRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try passportsRule.validate(jsonObject) }.to(throwError(RuleError.invalidJSONType("", nil)))
                 expect{ try passportsRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
                         let stack = error.unwindStack()
                         expect(stack.count).to(equal(3))
@@ -370,7 +370,7 @@ class BenderInTests: QuickSpec {
                 let passportsRule = StructRule(ref([Passport]()))
                     .expect("passports", passportArrayRule, { $0.value = $1 })
                 
-                expect{ try passportsRule.validate(jsonObject) }.toNot(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try passportsRule.validate(jsonObject) }.toNot(throwError(RuleError.invalidJSONType("", nil)))
                 
                 let objects = try? passportsRule.validate(jsonObject)
                 expect(objects?.count).to(equal(2))
@@ -384,14 +384,14 @@ class BenderInTests: QuickSpec {
                 let jsonObject = jsonFromFile("enum_test")
                 
                 let enumRule = EnumRule<IssuedBy>()
-                    .option("FMS", .FMS)
-                    .option("SMS", .SMS)
-                    .option("OPG", .OPG)
-                    .option(0, .Unknown)                
+                    .option("FMS", .fms)
+                    .option("SMS", .sms)
+                    .option("OPG", .opg)
+                    .option(0, .unknown)
                 
                 let intEnumRule = EnumRule<Active>()
-                    .option(0, .Inactive)
-                    .option(1, .Active)
+                    .option(0, .inactive)
+                    .option(1, .active)
                 
                 let testRule = StructRule(ref(Pass()))
                     .expect("issuedBy", enumRule) { $0.value.issuedBy = $1 }
@@ -404,8 +404,8 @@ class BenderInTests: QuickSpec {
                     
                     expect(tests.count).to(equal(4))
                     
-                    expect(tests[1].active).to(equal(Active.Inactive))
-                    expect(tests[1].issuedBy).to(equal(IssuedBy.SMS))
+                    expect(tests[1].active).to(equal(Active.inactive))
+                    expect(tests[1].issuedBy).to(equal(IssuedBy.sms))
                     
                 } catch let err {
                     expect(false).to(equal(true), description: "\(err)")
@@ -417,17 +417,17 @@ class BenderInTests: QuickSpec {
                 let jsonObject = jsonFromFile("enum_test")
                 
                 let enumRule = EnumRule<IssuedBy>()
-                    .option("XMS", .FMS)
-                    .option("XMS", .SMS)
-                    .option("XPG", .OPG)
-                    .option(0, .Unknown)
+                    .option("XMS", .fms)
+                    .option("XMS", .sms)
+                    .option("XPG", .opg)
+                    .option(0, .unknown)
                 
                 let testRule = StructRule(ref(Pass()))
                     .expect("issuedBy", enumRule) { $0.value.issuedBy = $1 }
                 
                 let testRules = ArrayRule(itemRule: testRule)
                 
-                expect{ try testRules.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try testRules.validate(jsonObject) }.to(throwError(RuleError.invalidJSONType("", nil)))
                 expect{ try testRules.validate(jsonObject) }.to(throwError { (error: RuleError) in
                     expect(error.description).to(equal("Unable to validate array of Pass: item #0 could not be validated.\nUnable to validate mandatory field \"issuedBy\" for Pass.\nUnable to validate enum IssuedBy. Unexpected enum case found: \"FMS\"."))
                     })
@@ -438,8 +438,8 @@ class BenderInTests: QuickSpec {
                 
                 let jsonObject = jsonFromFile("defaults_test")
                 
-                let adminStaffRule = EnumRule(ifNotFound: AdminStaff.Other)
-                    .option("ENGINEER", .Engineer)
+                let adminStaffRule = EnumRule(ifNotFound: AdminStaff.other)
+                    .option("ENGINEER", .engineer)
                 
                 let employeeRule = ClassRule(Employee())
                     .expect("name", StringRule) { $0.name = $1 }
@@ -447,9 +447,9 @@ class BenderInTests: QuickSpec {
                 
                 let employee = try! ArrayRule(itemRule: employeeRule).validate(jsonObject)
                 
-                expect(employee[0].position).to(equal(AdminStaff.Other))
-                expect(employee[1].position).to(equal(AdminStaff.Engineer))
-                expect(employee[2].position).to(equal(AdminStaff.Other))
+                expect(employee[0].position).to(equal(AdminStaff.other))
+                expect(employee[1].position).to(equal(AdminStaff.engineer))
+                expect(employee[2].position).to(equal(AdminStaff.other))
             }
             
             
@@ -495,7 +495,7 @@ class BenderInTests: QuickSpec {
                 let personRule = ClassRule(Person())
                     .expect("passport", StringifiedJSONRule(nestedRule: passportRule), { $0.passport = $1 })
                 
-                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.InvalidJSONType("", nil)))
+                expect{ try personRule.validate(jsonObject) }.to(throwError(RuleError.invalidJSONType("", nil)))
                 expect{ try personRule.validate(jsonObject) }.to(throwError { (error: RuleError) in
                         let stack = error.unwindStack()
                         expect(stack.count).to(equal(2))
@@ -507,13 +507,13 @@ class BenderInTests: QuickSpec {
     }
 }
 
-func jsonFromFile(name: String) -> AnyObject {
-    let data = NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)!
-    return try! NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+func jsonFromFile(_ name: String) -> AnyObject {
+    let data = try! Data(contentsOf: URL(fileURLWithPath: Bundle(for: BenderInTests.self).path(forResource: name, ofType: "json")!))
+    return try! JSONSerialization.jsonObject(with: data, options: .allowFragments) as AnyObject
 }
 
-func dataFromFile(name: String) -> NSData? {
-    return NSData(contentsOfFile: NSBundle(forClass: BenderInTests.self).pathForResource(name, ofType: "json")!)
+func dataFromFile(_ name: String) -> Data? {
+    return (try? Data(contentsOf: URL(fileURLWithPath: Bundle(for: BenderInTests.self).path(forResource: name, ofType: "json")!)))
 }
 
 class HotelData {
@@ -543,20 +543,20 @@ class Passports {
 }
 
 enum IssuedBy {
-    case Unknown
-    case FMS
-    case SMS
-    case OPG
+    case unknown
+    case fms
+    case sms
+    case opg
 }
 
 enum Active {
-    case Active
-    case Inactive
+    case active
+    case inactive
 }
 
 struct Pass {
-    var issuedBy: IssuedBy = .Unknown
-    var active: Active = .Inactive
+    var issuedBy: IssuedBy = .unknown
+    var active: Active = .inactive
 }
 
 struct Folder {
@@ -566,8 +566,8 @@ struct Folder {
 }
 
 enum AdminStaff {
-    case Engineer
-    case Other
+    case engineer
+    case other
 }
 
 class Employee {
