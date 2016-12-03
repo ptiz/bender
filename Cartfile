@@ -1,0 +1,5 @@
+##
+# Bender Cartfile
+
+github "Quick/Quick" == 0.10.0
+github "Quick/Nimble" == 5.1.1

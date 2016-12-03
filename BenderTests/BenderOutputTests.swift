@@ -30,8 +30,6 @@ import XCTest
 import Quick
 import Nimble
 
-@testable import Bender
-
 extension Passports {
     convenience init(numbers: [Int], items: [Passport]) {
         self.init()
@@ -56,9 +54,91 @@ extension Person {
     }
 }
 
+
+class AtomicTypes {
+    var i: Int?
+    var i8: Int8?
+    var i16: Int16?
+    var i32: Int32?
+    var i64: Int64?
+    var ui: UInt?
+    var ui8: UInt8?
+    var ui16: UInt16?
+    var ui32: UInt32?
+    var ui64: UInt64?
+    var flt: Float?
+    var dbl: Double?
+    var b: Bool?
+    var s: String?
+    
+    init(i: Int = 0, i8: Int8 = 0, i16: Int16 = 0, i32: Int32 = 0, i64: Int64 = 0,
+         ui: UInt = 0, ui8: UInt8 = 0, ui16: UInt16 = 0, ui32: UInt32 = 0, ui64: UInt64 = 0,
+         flt: Float = 0, dbl: Double = 0,
+         b: Bool = false,
+         s: String = "") {
+        self.i = i
+        self.i8 = i8
+        self.i16 = i16
+        self.i32 = i32
+        self.i64 = i64
+        self.ui = ui
+        self.ui8 = ui8
+        self.ui16 = ui16
+        self.ui32 = ui32
+        self.ui64 = ui64
+        self.flt = flt
+        self.dbl = dbl
+        self.b = b
+        self.s = s
+    }
+}
+
 class BenderOutTests: QuickSpec {
         
     override func spec() {
+        
+        describe("Atomic types dump") {
+            it("Should support all the types listed in AtomicTypes struct") {
+                var atomicRule = ClassRule(AtomicTypes())
+                    .optional("i", IntRule) { $0.i }
+                    .optional("i8", Int8Rule) { $0.i8 }
+                    .optional("i16", Int16Rule) { $0.i16 }
+                    .optional("i32", Int32Rule) { $0.i32 }
+                    .optional("i64", Int64Rule) { $0.i64 }
+                    .optional("ui", UIntRule) { $0.ui }
+                    .optional("ui8", UInt8Rule) { $0.ui8 }
+                
+                //Compiler goes mad trying to parse all the expression, so we just split it into two
+                atomicRule = atomicRule
+                    .optional("ui16", UInt16Rule) { $0.ui16 }
+                    .optional("ui32", UInt32Rule) { $0.ui32 }
+                    .optional("ui64", UInt64Rule) { $0.ui64 }
+                    .optional("flt", FloatRule) { $0.flt }
+                    .optional("dbl", DoubleRule) { $0.dbl }
+                    .optional("b", BoolRule) { $0.b }
+                    .optional("s", StringRule) { $0.s }
+                
+                let a = AtomicTypes(i: -1, i8: -2, i16: -3, i32: -4, i64: -5, ui: 6, ui8: 7, ui16: 8, ui32: 9, ui64: 10, flt: 11.1, dbl: 12121212.1212121212, b: true, s: "the string")
+                
+                let passString = try! StringifiedJSONRule(nestedRule: atomicRule).dump(a) as! String
+                
+                expect(passString).to(contain("\"i\":-1"))
+                expect(passString).to(contain("\"i8\":-2"))
+                expect(passString).to(contain("\"i16\":-3"))
+                expect(passString).to(contain("\"i32\":-4"))
+                expect(passString).to(contain("\"i64\":-5"))
+                expect(passString).to(contain("\"ui\":6"))
+                expect(passString).to(contain("\"ui8\":7"))
+                expect(passString).to(contain("\"ui16\":8"))
+                expect(passString).to(contain("\"ui32\":9"))
+                expect(passString).to(contain("\"ui64\":10"))
+                expect(passString).to(contain("\"flt\":11.1"))
+                expect(passString).to(contain("\"dbl\":12121212.12121212"))
+                expect(passString).to(contain("\"b\":true"))
+                expect(passString).to(contain("\"s\":\"the string\""))
+                
+            }
+        }
         
         describe("Basic struct dump") {
             it("should perform nested struct output to dict") {
@@ -67,7 +147,7 @@ class BenderOutTests: QuickSpec {
                     .expect("name", StringRule, { $0.value.name = $1 }) { $0.name }
                     .expect("size", Int64Rule, { $0.value.size = $1 }) { $0.size }
         
-                folderRule
+                let _ = folderRule
                     .optional("folders", ArrayRule(itemRule: folderRule), { $0.value.folders = $1 }) { $0.folders }
                 
                 let f = Folder(name: "Folder 1", size: 10, folders: [
@@ -88,7 +168,7 @@ class BenderOutTests: QuickSpec {
                     .expect("name", StringRule) { $0.name }
                     .expect("size", Int64Rule) { $0.size }
                 
-                folderRule
+                let _ = folderRule
                     .optional("folders", ArrayRule(itemRule: folderRule)) { $0.folders }
                 
                 let f = Folder(name: "Folder 1", size: 10, folders: [
@@ -113,10 +193,9 @@ class BenderOutTests: QuickSpec {
                 
                 let pass = Passport(number: nil, issuedBy: "One", valid: false)
                 
-                let passJson = try! passportRule.dump(pass)
-                
-                expect(passJson["issuedBy"]).to(equal("One"))
-                expect(passJson["number"]).to(beAKindOf(NSNull.self))
+                let passJson = try! passportRule.dump(pass) as! [String: AnyObject]
+                expect(passJson["issuedBy"] as? String).to(equal("One"))
+                expect(passJson["number"] as? NSNull).toNot(beNil())
             
                 let passString = try! StringifiedJSONRule(nestedRule: passportRule).dump(pass) as! String
                 
@@ -141,7 +220,7 @@ class BenderOutTests: QuickSpec {
                     .optional("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.value.name = $1 }
                 
                 let data = try? m.dump(userStruct) as! [String: AnyObject]
-                let user = try? m.validate(data!)
+                let user = try? m.validate(data as AnyObject)
                 
                 expect(user).toNot(beNil())
                 expect(user?.id).to(equal(userStruct.id))
@@ -187,14 +266,14 @@ class BenderOutTests: QuickSpec {
             it("should performs enum dump of any internal type") {
                 
                 let enumRule = EnumRule<IssuedBy>()
-                    .option("FMS", .FMS)
-                    .option("SMS", .SMS)
-                    .option("OPG", .OPG)
-                    .option(0, .Unknown)
+                    .option("FMS", .fms)
+                    .option("SMS", .sms)
+                    .option("OPG", .opg)
+                    .option(0, .unknown)
                 
                 let intEnumRule = EnumRule<Active>()
-                    .option(0, .Inactive)
-                    .option(1, .Active)
+                    .option(0, .inactive)
+                    .option(1, .active)
                 
                 let testRule = StructRule(ref(Pass()))
                     .expect("issuedBy", enumRule, { $0.value.issuedBy = $1 }) { $0.issuedBy }
@@ -203,17 +282,17 @@ class BenderOutTests: QuickSpec {
                 let testRules = ArrayRule(itemRule: testRule)
                 
                 let rules = [
-                    Pass(issuedBy: .FMS, active: .Active),
-                    Pass(issuedBy: .OPG, active: .Inactive),
-                    Pass(issuedBy: .Unknown, active: .Inactive)
+                    Pass(issuedBy: .fms, active: .active),
+                    Pass(issuedBy: .opg, active: .inactive),
+                    Pass(issuedBy: .unknown, active: .inactive)
                 ]
                 
                 let d = try! testRules.dump(rules)
                 let newRules = try! testRules.validate(d)
                 
                 expect(newRules.count).to(equal(3))
-                expect(newRules[2].issuedBy).to(equal(IssuedBy.Unknown))
-                expect(newRules[2].active).to(equal(Active.Inactive))
+                expect(newRules[2].issuedBy).to(equal(IssuedBy.unknown))
+                expect(newRules[2].active).to(equal(Active.inactive))
             }
         }
     

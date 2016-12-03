@@ -1,0 +1,56 @@
+{
+  "rooms": [
+    123,
+    311
+  ],
+  "clients": [
+    {
+      "name": "John",
+      "age": 20,
+      "sex": "male"
+    },
+    {
+      "name": "Alisa",
+      "age": 23,
+      "sex": "female"
+    }
+  ],
+  "journal": {
+    "rooms": [
+      {
+        "number": 123,
+        "furniture": [
+          "table",
+          "bed",
+          "chair"
+        ]
+      },
+      {
+        "number": 311,
+        "furniture": [
+          "table",
+          "bed"
+        ]
+      }
+    ],
+    "schedule": [
+      [
+        [
+          123,
+          123,
+          311
+        ],
+        [
+          311,
+          123,
+          311
+        ],
+        [
+          123,
+          234,
+          546
+        ]
+      ]
+    ]
+  }
+}
