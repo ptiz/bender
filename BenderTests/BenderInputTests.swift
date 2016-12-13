@@ -1,5 +1,5 @@
 //
-//  BenderTests.swift
+//  BenderInputTests.swift
 //  BenderTests
 //
 //  Created by Evgenii Kamyshanov on 04.01.16.
@@ -33,67 +33,6 @@ import Nimble
 class BenderInTests: QuickSpec {
     
     override func spec() {
-
-        describe("JSON path") {
-            it("should find path in JSON dict") {
-                let jsonObject = jsonFromFile("path_test")
-                let obj = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user"/"id") as? String
-                
-                expect(obj).toNot(beNil())
-                expect(obj).to(equal("123456"))
-                
-                let dict = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user") as? [String: AnyObject]
-                
-                expect(dict).toNot(beNil())
-                expect(dict?["id"] as? String).to(equal("123456"))
-            }
-            
-            it("should fail finding a wrong path in JSON dict") {
-                let jsonObject = jsonFromFile("path_test")
-                let obj = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user"/"id_WRONG") as? String
-                
-                expect(obj).to(beNil())
-                
-                let obj1 = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy_WRONG"/"user"/"id") as? String
-                
-                expect(obj1).to(beNil())
-            }
-            
-            it("should create intermediate dictionaries for path if needed") {
-                let path = "message"/"payload"/"createdBy"/"user"/"id"
-                let data = try? setInDictionary([:], object: "123456" as AnyObject?, atPath: path)
-                let obj = objectIn(data as AnyObject, atPath: path) as? String
-                
-                expect(obj).to(equal("123456"))
-            }
-        }
-        
-        describe("Paths through arrays") {
-            it("should fetch right values") {
-                let jsonData = dataFromFile("paths_through_arrays")
-                
-                let hotelData = ClassRule(HotelData())
-                    .expect("rooms"/0, IntRule, { $0.firstRoomNumber = $1 })
-                    .expect("clients"/1/"name", StringRule, { $0.secondClientName = $1 })
-                    .expect("journal"/"rooms"/1/"furniture"/1, StringRule, { $0.furnitureName = $1 })
-                    .expect("journal"/"schedule"/0/2/1, IntRule, { $0.occupiedRoom = $1 })
-                do {
-                    let hotel = try hotelData.validateData(jsonData)
-                    
-                    expect(hotel.firstRoomNumber).to(equal(123))
-                    expect(hotel.secondClientName).to(equal("Alisa"))
-                    expect(hotel.furnitureName).to(equal("bed"))
-                    expect(hotel.occupiedRoom).to(equal(234))
-                } catch let err {
-                    expect(false).to(equal(true), description: "\(err)")
-                }
-            }
-            it("should throws exception for index that great or equal than count") {
-                let jsonData = dataFromFile("paths_through_arrays")
-                let hotelData = ClassRule(HotelData()).expect("rooms"/100, IntRule, { $0.firstRoomNumber = $1 })
-                expect{ try hotelData.validateData(jsonData) }.to(throwError(RuleError.invalidJSONType("", nil)))
-            }
-        }
         
         describe("Basic struct validation") {
             it("should perform nested struct validating and binding") {
@@ -504,6 +443,68 @@ class BenderInTests: QuickSpec {
 
             }
         }
+        
+        describe("JSON path") {
+            it("should find path in JSON dict") {
+                let jsonObject = jsonFromFile("path_test")
+                let obj = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user"/"id") as? String
+                
+                expect(obj).toNot(beNil())
+                expect(obj).to(equal("123456"))
+                
+                let dict = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user") as? [String: AnyObject]
+                
+                expect(dict).toNot(beNil())
+                expect(dict?["id"] as? String).to(equal("123456"))
+            }
+            
+            it("should fail finding a wrong path in JSON dict") {
+                let jsonObject = jsonFromFile("path_test")
+                let obj = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user"/"id_WRONG") as? String
+                
+                expect(obj).to(beNil())
+                
+                let obj1 = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy_WRONG"/"user"/"id") as? String
+                
+                expect(obj1).to(beNil())
+            }
+            
+            it("should create intermediate dictionaries for path if needed") {
+                let path = "message"/"payload"/"createdBy"/"user"/"id"
+                let data = try? setInDictionary([:], object: "123456" as AnyObject?, atPath: path)
+                let obj = objectIn(data as AnyObject, atPath: path) as? String
+                
+                expect(obj).to(equal("123456"))
+            }
+        }
+        
+        describe("JSON paths through arrays") {
+            it("should fetch right values") {
+                let jsonData = dataFromFile("paths_through_arrays")
+                
+                let hotelData = ClassRule(HotelData())
+                    .expect("rooms"/0, IntRule, { $0.firstRoomNumber = $1 })
+                    .expect("clients"/1/"name", StringRule, { $0.secondClientName = $1 })
+                    .expect("journal"/"rooms"/1/"furniture"/1, StringRule, { $0.furnitureName = $1 })
+                    .expect("journal"/"schedule"/0/2/1, IntRule, { $0.occupiedRoom = $1 })
+                do {
+                    let hotel = try hotelData.validateData(jsonData)
+                    
+                    expect(hotel.firstRoomNumber).to(equal(123))
+                    expect(hotel.secondClientName).to(equal("Alisa"))
+                    expect(hotel.furnitureName).to(equal("bed"))
+                    expect(hotel.occupiedRoom).to(equal(234))
+                } catch let err {
+                    expect(false).to(equal(true), description: "\(err)")
+                }
+            }
+            it("should throws exception for index that great or equal than count") {
+                let jsonData = dataFromFile("paths_through_arrays")
+                let hotelData = ClassRule(HotelData()).expect("rooms"/100, IntRule, { $0.firstRoomNumber = $1 })
+                expect{ try hotelData.validateData(jsonData) }.to(throwError(RuleError.invalidJSONType("", nil)))
+            }
+        }
+        
     }
 }
 
