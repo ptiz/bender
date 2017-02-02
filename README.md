@@ -1,21 +1,21 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.5.0-brightgreen.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.5.1-brightgreen.svg)]()
 
-Not just yet another JSON mapping framework for Swift, but tool for building rules for JSON structures validating and binding to your data types.
+A declarative JSON mapping library which does not pollute your models with ridiculous initializers and stuff. Describes JSON for your classes, does not dress your classes for JSON.
 
 Bender
 - focuses on JSON data describing, much like JSON schema does;
-- does not require your model classes to inherit from any library roots;
-- type-safe;
+- does not make your models depend on the library;
 - supports mandatory/optional fields checking with error throwing;
-- does not require exact field naming or even field existence;
-- supports classes/structs with all JSON natural field types, nested/recursively nested ones, arrays as class/struct fields or JSON root ones, custom enums, 'stringified' JSON;
-- allows you to dump data structures using validation rules written once;
+- supports classes, structs with all JSON natural field types, recursively nested ones, arrays as fields or JSON root ones, custom enums, etc;
+- supports JSON paths;
+- dumps classes back to JSON using same validation rules;
 - allows you to write your own validator/dumper in a couple of dozen lines;
-- small: ~600 loc in Swift.
+- small: ~600 loc in Swift;
+- really fast (see performance tests included)!
 
 ### Example
-Let's assume we receive in JSON the struct like this:
+Let's assume we received a JSON struct like this:
 ```json
 {
   "title": "root",
@@ -145,7 +145,7 @@ You can even bind JSON structs into tuples! Use for that the StructRule as well:
 ```
 
 ### JSON path
-Sometimes you do not need to bind any intermediate JSON dictionaries. For example, you want to extract only 'user' information in a struct like this:
+Sometimes you do not need to bind any intermediate JSON dictionaries. For example, you want to extract only 'user' struct from JSON like this:
 ```json
 {
     "message": {
@@ -160,7 +160,7 @@ Sometimes you do not need to bind any intermediate JSON dictionaries. For exampl
     }
 }
 ```
-You do not need to create redundant classes for all that intermediate stuff or play with tuples. Just use magic operator "/" to construct the path needed:
+You do not need to create redundant classes for all that intermediate stuff. Just use magic operator "/" to construct the path needed:
 ```swift
   let rule = ClassRule(User())
     .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule) { $0.id = $1 }
@@ -246,13 +246,10 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.5.0'
+  pod 'Bender', '~> 1.5.1'
 ```
 **Carthage:**
 ```
-github "ptiz/Bender" == 1.5.0
+github "ptiz/Bender" == 1.5.1
 ```
 
-**Manual:**
-
-Bender is a one-file project. So you can just add ```Bender.swift``` file to yours.
