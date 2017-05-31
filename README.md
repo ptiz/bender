@@ -1,5 +1,5 @@
 # Bender
-[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.5.1-brightgreen.svg)]()
+[![DUB](https://img.shields.io/dub/l/vibe-d.svg)]() [![CocoaPods](https://img.shields.io/cocoapods/v/Bender.svg)]() [![Carthage](https://img.shields.io/badge/Carthage-1.5.2-brightgreen.svg)]()
 
 A declarative JSON mapping library which does not pollute your models with ridiculous initializers and stuff. Describes JSON for your classes, does not dress your classes for JSON.
 
@@ -246,10 +246,10 @@ public protocol Rule {
 ### Installation
 **CocoaPods:**
 ```
-  pod 'Bender', '~> 1.5.1'
+  pod 'Bender', '~> 1.5.2'
 ```
 **Carthage:**
 ```
-github "ptiz/Bender" == 1.5.1
+github "ptiz/Bender" == 1.5.2
 ```
 
