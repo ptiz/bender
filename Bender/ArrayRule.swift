@@ -74,11 +74,13 @@ public class ArrayRule<T, R: Rule>: Rule where R.V == T {
         
         do {
             for object in jsonArray {
-                do {
-                    newArray.append(try itemRule.validate(object as AnyObject))
-                    index += 1
-                } catch let handlerError {
-                    try invalidItemHandler(handlerError)
+                try autoreleasepool {
+                    do {
+                        newArray.append(try itemRule.validate(object as AnyObject))
+                        index += 1
+                    } catch let handlerError {
+                        try invalidItemHandler(handlerError)
+                    }
                 }
             }
         } catch let err as RuleError {
@@ -100,10 +102,12 @@ public class ArrayRule<T, R: Rule>: Rule where R.V == T {
     open func dump(_ value: V) throws -> AnyObject {
         var array = [AnyObject]()
         for (index, t) in value.enumerated() {
-            do {
-                array.append(try itemRule.dump(t))
-            } catch let err as RuleError {
-                throw RuleError.invalidDump("Unable to dump array of \(T.self): item #\(index) could not be dumped.", err)
+            try autoreleasepool {
+                do {
+                    array.append(try itemRule.dump(t))
+                } catch let err as RuleError {
+                    throw RuleError.invalidDump("Unable to dump array of \(T.self): item #\(index) could not be dumped.", err)
+                }
             }
         }
         return array as AnyObject
