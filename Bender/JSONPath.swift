@@ -88,19 +88,19 @@ public struct JSONPath: ExpressibleByStringLiteral, ExpressibleByArrayLiteral, C
     }
 }
 
-func objectIn(_ object: AnyObject, atPath path: String) -> AnyObject? {
-    if let dict = object as? NSDictionary, let value = dict.value(forKey: path) as AnyObject?, !(value is NSNull) {
+public func getInDictionary(_ dict: NSDictionary, atPath path: String) -> AnyObject? {
+    if let value = dict.value(forKey: path) as AnyObject?, !(value is NSNull) {
         return value
     }
     return nil
 }
 
-func objectIn(_ object: AnyObject, atPath path: JSONPath) -> AnyObject? {
+public func getInDictionary(_ dict: NSDictionary, atPath path: JSONPath) -> AnyObject? {
     if let key = path.singleString {
-        return objectIn(object, atPath: key)
+        return getInDictionary(dict, atPath: key)
     }
     
-    var currentObject: AnyObject? = object
+    var currentObject: AnyObject? = dict as AnyObject
     for pathItem in path.elements {
         if let currentDict = currentObject as? NSDictionary, case .DictionaryKey(let item) = pathItem, let next = currentDict.value(forKey: item) as AnyObject?, !(next is NSNull) {
             currentObject = next
@@ -115,7 +115,7 @@ func objectIn(_ object: AnyObject, atPath path: JSONPath) -> AnyObject? {
     return currentObject
 }
 
-func setInDictionary(_ dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+public func setInDictionary(_ dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
     guard let first = path.elements.first else {
         throw RuleError.invalidDump("Unexpectedly count of path elements is 0", nil)
     }
