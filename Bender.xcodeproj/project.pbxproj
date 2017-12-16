@@ -342,6 +342,9 @@
 						DevelopmentTeam = JU6Q9E22B5;
 						ProvisioningStyle = Automatic;
 					};
+					C1F6A6231FE5168000FE716B = {
+						LastSwiftMigration = 0920;
+					};
 				};
 			};
 			buildConfigurationList = 5B54EEFA1C3A90AE0072B2A8 /* Build configuration list for PBXProject "Bender" */;
@@ -811,7 +814,8 @@
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.0;
 				VALID_ARCHS = "x86_64 i386";
 			};
 			name = Debug;
@@ -839,7 +843,8 @@
 				SDKROOT = macosx10.13;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_VERSION = 3.0;
+				SWIFT_SWIFT3_OBJC_INFERENCE = On;
+				SWIFT_VERSION = 4.0;
 				VALID_ARCHS = "x86_64 i386";
 			};
 			name = Release;
