@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "5B54EEFF1C3A90AE0072B2A8"
                BuildableName = "Bender.framework"
-               BlueprintName = "Bender"
+               BlueprintName = "Bender-iOS"
                ReferencedContainer = "container:Bender.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -35,8 +35,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "5B54EF091C3A90AE0072B2A8"
-               BuildableName = "BenderTests.xctest"
-               BlueprintName = "BenderTests"
+               BuildableName = "BenderTests-iOS.xctest"
+               BlueprintName = "BenderTests-iOS"
                ReferencedContainer = "container:Bender.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -46,7 +46,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "5B54EEFF1C3A90AE0072B2A8"
             BuildableName = "Bender.framework"
-            BlueprintName = "Bender"
+            BlueprintName = "Bender-iOS"
             ReferencedContainer = "container:Bender.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -69,7 +69,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "5B54EEFF1C3A90AE0072B2A8"
             BuildableName = "Bender.framework"
-            BlueprintName = "Bender"
+            BlueprintName = "Bender-iOS"
             ReferencedContainer = "container:Bender.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -87,7 +87,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "5B54EEFF1C3A90AE0072B2A8"
             BuildableName = "Bender.framework"
-            BlueprintName = "Bender"
+            BlueprintName = "Bender-iOS"
             ReferencedContainer = "container:Bender.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

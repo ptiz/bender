@@ -29,6 +29,7 @@
 import XCTest
 import Quick
 import Nimble
+import Bender
 
 extension Passports {
     convenience init(numbers: [Int], items: [Passport]) {
