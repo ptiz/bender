@@ -29,6 +29,7 @@
 import XCTest
 import Quick
 import Nimble
+import Bender
 
 class BenderInTests: QuickSpec {
     
@@ -447,12 +448,12 @@ class BenderInTests: QuickSpec {
         describe("JSON path") {
             it("should find path in JSON dict") {
                 let jsonObject = jsonFromFile("path_test")
-                let obj = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user"/"id") as? String
+                let obj = getInDictionary(jsonObject as! NSDictionary, atPath: "message"/"payload"/"createdBy"/"user"/"id") as? String
                 
                 expect(obj).toNot(beNil())
                 expect(obj).to(equal("123456"))
                 
-                let dict = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user") as? [String: AnyObject]
+                let dict = getInDictionary(jsonObject as! NSDictionary, atPath: "message"/"payload"/"createdBy"/"user") as? [String: AnyObject]
                 
                 expect(dict).toNot(beNil())
                 expect(dict?["id"] as? String).to(equal("123456"))
@@ -460,19 +461,19 @@ class BenderInTests: QuickSpec {
             
             it("should fail finding a wrong path in JSON dict") {
                 let jsonObject = jsonFromFile("path_test")
-                let obj = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy"/"user"/"id_WRONG") as? String
+                let obj = getInDictionary(jsonObject as! NSDictionary, atPath: "message"/"payload"/"createdBy"/"user"/"id_WRONG") as? String
                 
                 expect(obj).to(beNil())
                 
-                let obj1 = objectIn(jsonObject, atPath: "message"/"payload"/"createdBy_WRONG"/"user"/"id") as? String
+                let obj1 = getInDictionary(jsonObject as! NSDictionary, atPath: "message"/"payload"/"createdBy_WRONG"/"user"/"id") as? String
                 
                 expect(obj1).to(beNil())
             }
             
             it("should create intermediate dictionaries for path if needed") {
                 let path = "message"/"payload"/"createdBy"/"user"/"id"
-                let data = try? setInDictionary([:], object: "123456" as AnyObject?, atPath: path)
-                let obj = objectIn(data as AnyObject, atPath: path) as? String
+                let data: NSDictionary = (try? setInDictionary([:], object: "123456" as AnyObject?, atPath: path))! as NSDictionary
+                let obj = getInDictionary(data, atPath: path) as? String
                 
                 expect(obj).to(equal("123456"))
             }

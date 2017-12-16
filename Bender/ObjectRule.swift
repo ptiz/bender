@@ -318,7 +318,7 @@ public class ObjectRule<T, RefT>: Rule {
     fileprivate func validateRequirements(_ json: NSDictionary) throws {
         for (path, rule) in pathRequirements {
             try autoreleasepool {
-                guard let value = objectIn(json as AnyObject, atPath: path) else {
+                guard let value = getInDictionary(json, atPath: path) else {
                     throw RuleError.expectedNotFound("Unable to check the requirement, field \"\(path)\" not found in struct.", nil)
                 }
                 
@@ -341,7 +341,7 @@ public class ObjectRule<T, RefT>: Rule {
         var bindings = [LateBindClosure]()
         for (path, rule) in pathMandatoryRules {
             try autoreleasepool {
-                guard let value = objectIn(json as AnyObject, atPath: path) else {
+                guard let value = getInDictionary(json, atPath: path) else {
                     throw RuleError.expectedNotFound("Unable to validate \"\(json)\" as \(T.self). Mandatory field \"\(path)\" not found in struct.", nil)
                 }
                 
@@ -359,7 +359,7 @@ public class ObjectRule<T, RefT>: Rule {
         var bindings = [LateBindClosure]()
         for (path, rule) in pathOptionalRules {
             try autoreleasepool {
-                let value = objectIn(json as AnyObject, atPath: path)
+                let value = getInDictionary(json, atPath: path)
                 do {
                     if let binding = try rule(value) { bindings.append(binding) }
                 } catch let err as RuleError {
