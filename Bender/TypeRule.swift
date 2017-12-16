@@ -54,7 +54,7 @@ public class NumberRule<T>: Rule {
 /**
  Validator for signed and unsigned integer numerics
  */
-public class IntegerRule<T: Integer>: NumberRule<T> {
+public class IntegerRule<T: BinaryInteger>: NumberRule<T> {
     let i: T = 0
     
     public override init() {
