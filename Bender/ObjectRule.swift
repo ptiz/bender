@@ -33,7 +33,7 @@ import Foundation
  Validator for compound types: classes or structs. Validates JSON struct for particular type T,
  which is passed by value of type RefT.
  */
-public class ObjectRule<T, RefT>: Rule {
+open class ObjectRule<T, RefT>: Rule {
     public typealias V = T
     
     fileprivate typealias LateBindClosure = (RefT) -> Void
@@ -400,7 +400,7 @@ public class ObjectRule<T, RefT>: Rule {
 /**
  Validator of compound JSON object with binding to reference type like class T. Reference type is T itself.
  */
-public class ClassRule<T>: ObjectRule<T, T> {
+open class ClassRule<T>: ObjectRule<T, T> {
     
     public override init( _ factory: @autoclosure @escaping ()->T) {
         super.init(factory)
@@ -414,7 +414,7 @@ public class ClassRule<T>: ObjectRule<T, T> {
 /**
  Validator of compound JSON object with binding to value type like struct T. Reference type is ref<T>.
  */
-public class StructRule<T>: ObjectRule<T, ref<T>> {
+open class StructRule<T>: ObjectRule<T, ref<T>> {
     
     public override init( _ factory: @autoclosure @escaping ()->ref<T>) {
         super.init(factory)

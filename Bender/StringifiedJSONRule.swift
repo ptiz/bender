@@ -32,7 +32,7 @@ import Foundation
 /**
  Validator of JSON encoded into string like this: "\"field": \"value\"". Encoded JSON should be validated by given rule of type R.
  */
-public class StringifiedJSONRule<R: Rule>: Rule {
+open class StringifiedJSONRule<R: Rule>: Rule {
     public typealias V = R.V
     
     fileprivate let nestedRule: R

@@ -33,7 +33,7 @@ import Foundation
  Validator for enum of type T. Checks that JSON value to be validated is equal to any option stored and .
  If all stored properties do not match, throws ValidateError.
  */
-public class EnumRule<T: Equatable>: Rule {
+open class EnumRule<T: Equatable>: Rule {
     public typealias V = T
     
     fileprivate var cases: [(AnyObject) throws -> T?] = []
