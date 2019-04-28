@@ -32,7 +32,7 @@ import Foundation
 /**
  Validator for arrays of items of type T, that should be validated by rule of type R, i.e. where R.V == T.
  */
-public class ArrayRule<T, R: Rule>: Rule where R.V == T {
+open class ArrayRule<T, R: Rule>: Rule where R.V == T {
     public typealias V = [T]
     
     typealias ValidateClosure = (AnyObject) throws -> T

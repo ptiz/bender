@@ -32,7 +32,7 @@ import Foundation
 /**
  Base class for numeric validators
  */
-public class NumberRule<T>: Rule {
+open class NumberRule<T>: Rule {
     public typealias V = T
     
     public func validate(_ jsonValue: AnyObject) throws -> T {
@@ -42,11 +42,11 @@ public class NumberRule<T>: Rule {
         return try validateNumber(number)
     }
     
-    public func dump(_ value: T) throws -> AnyObject {
+    open func dump(_ value: T) throws -> AnyObject {
         return try toAny(value)
     }
     
-    public func validateNumber(_ number: NSNumber) throws -> T {
+    open func validateNumber(_ number: NSNumber) throws -> T {
         throw RuleError.invalidJSONType("Value of unexpected type found: \"\(number)\". Expected \(T.self).", nil)
     }
 }
