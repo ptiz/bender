@@ -41,7 +41,7 @@ public protocol Rule {
 // MARK: - Helpers
 
 public extension Rule {
-    public func validateData(_ jsonData: Data?) throws -> V {
+    func validateData(_ jsonData: Data?) throws -> V {
         do {
             guard let data = jsonData else {
                 throw RuleError.expectedNotFound("Unable to get JSON object: no data found.", nil)
@@ -54,7 +54,7 @@ public extension Rule {
         }
     }
     
-    public func dumpData(_ value: V) throws -> Data {
+    func dumpData(_ value: V) throws -> Data {
         do {
             return try JSONSerialization.data(withJSONObject: try dump(value), options: JSONSerialization.WritingOptions(rawValue: 0))
         } catch let error as RuleError {
