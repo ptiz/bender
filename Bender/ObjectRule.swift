@@ -403,7 +403,11 @@ open class ObjectRule<T, RefT>: Rule {
 open class ClassRule<T>: ObjectRule<T, T> {
     
     public override init( _ factory: @autoclosure @escaping ()->T) {
+        #if swift(>=5.0)
+        super.init(factory())
+        #else
         super.init(factory)
+        #endif
     }
     
     open override func value(_ newStruct: T) -> T {
@@ -417,7 +421,11 @@ open class ClassRule<T>: ObjectRule<T, T> {
 open class StructRule<T>: ObjectRule<T, ref<T>> {
     
     public override init( _ factory: @autoclosure @escaping ()->ref<T>) {
+        #if swift(>=5.0)
+        super.init(factory())
+        #else
         super.init(factory)
+        #endif
     }
     
     open override func value(_ newStruct: ref<T>) -> T {
