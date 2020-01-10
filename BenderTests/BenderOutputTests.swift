@@ -186,10 +186,27 @@ class BenderOutTests: QuickSpec {
                 expect(folders.count).to(equal(2))
             }
             
-            it("should be able to dump 'null' values") {
+            it("should be able to dump 'null' values with expect") {
                 let passportRule = ClassRule(Passport())
                     .expect("issuedBy", StringRule) { $0.issuedBy }
                     .expect("number", IntRule) { $0.number }
+                    .expect("valid", BoolRule) { $0.valid }
+                
+                let pass = Passport(number: nil, issuedBy: "One", valid: false)
+                
+                let passJson = try! passportRule.dump(pass) as! [String: AnyObject]
+                expect(passJson["issuedBy"] as? String).to(equal("One"))
+                expect(passJson["number"] as? NSNull).toNot(beNil())
+            
+                let passString = try! StringifiedJSONRule(nestedRule: passportRule).dump(pass) as! String
+                
+                expect(passString).to(contain("\"number\":null"))
+            }
+            
+            it("should be able to dump 'null' values with forceOptional") {
+                let passportRule = ClassRule(Passport())
+                    .expect("issuedBy", StringRule) { $0.issuedBy }
+                    .forceOptional("number", IntRule) { $0.number }
                     .expect("valid", BoolRule) { $0.valid }
                 
                 let pass = Passport(number: nil, issuedBy: "One", valid: false)

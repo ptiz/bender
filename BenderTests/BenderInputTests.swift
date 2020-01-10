@@ -157,6 +157,24 @@ class BenderInTests: QuickSpec {
                 expect(employee[1].age).to(equal(defaultValue))
                 expect(employee[2].age).to(equal(37.8))
             }
+
+            it("should be able to provide 'nil' values for optionals") {
+
+                let jsonObject = jsonFromFile("basic_test")
+                
+                let object = Employee()
+                object.position = .other
+                let adminStaffRule = EnumRule(ifNotFound: AdminStaff.other)
+                    .option("ENGINEER", .engineer)
+                
+                let employeeRule = ClassRule(object)
+                    .expect("name", StringRule) { $0.name = $1 }
+                    .forceOptional("position", adminStaffRule) { $0.position = $1 }
+                
+                let employee = try! employeeRule.validate(jsonObject)
+                
+                expect(employee.position).to(beNil())
+            }
             
         }
         

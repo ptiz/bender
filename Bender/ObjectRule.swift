@@ -208,6 +208,51 @@ open class ObjectRule<T, RefT>: Rule {
     }
     
     /**
+     Method for declaring optional field that may be found in a JSON dictionary. If value not found in struct, bind will be called with 'nil'.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     
+     - returns: returns self for field declaration chaining
+     */
+    open func forceOptional<R: Rule>(_ path: JSONPath, _ rule: R, _ bind: @escaping (RefT, R.V?)->Void) -> Self {
+        pathOptionalRules.append((path, storeForceOptionalRule(rule, bind)))
+        return self
+    }
+    
+    /**
+     Method for declaring optional field that may be found in a JSON dictionary. If value not found in struct, bind and dump will be called with 'nil'.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter bind: optional bind closure, that receives reference to object of generic parameter type as a first argument and validated field value as a second one
+     - parameter dump: closure used for dump, receives immutable object of type T and should return value of validated field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    open func forceOptional<R: Rule>(_ path: JSONPath, _ rule: R, _ bind: @escaping (RefT, R.V?)->Void, dump: @escaping (T)->R.V?) -> Self {
+        pathOptionalRules.append((path, storeForceOptionalRule(rule, bind)))
+        optionalDumpRules.append((path,  storeDumpRuleForseNull(rule, dump)))
+        return self
+    }
+    
+    /**
+     Method for declaring optional field that may be found in a JSON dictionary. If the field is not found during validation,
+     dump will be called with nil.
+     
+     - parameter name: string name of the field
+     - parameter rule: rule that should validate the value of the field
+     - parameter dump: closure used for dump, receives immutable object of type T and may return optional value of R.V field type
+     
+     - returns: returns self for field declaration chaining
+     */
+    open func forceOptional<R: Rule>(_ path: JSONPath, _ rule: R, dump: @escaping (T)->R.V?) -> Self {
+        optionalDumpRules.append((path, storeDumpRuleForseNull(rule, dump)))
+        return self
+    }
+    
+    /**
      Validates JSON dictionary and returns T value if succeeded. Validation throws if jsonValue is not a JSON dictionary or if any nested rule throws. Object of type T will not be created if the validation fails.
      
      - parameter jsonValue: JSON dictionary to be validated and converted into T
@@ -268,6 +313,22 @@ open class ObjectRule<T, RefT>: Rule {
     
     fileprivate func storeRule<R: Rule>(_ rule: R, _ bind: ((RefT, R.V)->Void)? = nil) -> RuleClosure {
         return { (json) in
+            let v = try rule.validate(json)
+            if let b = bind {
+                return { b($0, v) }
+            }
+            return nil
+        }
+    }
+    
+    fileprivate func storeForceOptionalRule<R: Rule>(_ rule: R, _ bind: ((RefT, R.V?)->Void)?) -> OptionalRuleClosure {
+        return { (optionalJson) in
+            guard let json = optionalJson, !(json is NSNull) else {
+                if let b = bind {
+                    return { b($0, nil) }
+                }
+                return nil
+            }
             let v = try rule.validate(json)
             if let b = bind {
                 return { b($0, v) }
