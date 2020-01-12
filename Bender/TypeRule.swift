@@ -35,14 +35,14 @@ import Foundation
 open class NumberRule<T>: Rule {
     public typealias V = T
     
-    public func validate(_ jsonValue: AnyObject) throws -> T {
+    public func validate(_ jsonValue: Any) throws -> T {
         guard let number = jsonValue as? NSNumber else {
             throw RuleError.invalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
         }
         return try validateNumber(number)
     }
     
-    open func dump(_ value: T) throws -> AnyObject {
+    open func dump(_ value: T) throws -> Any {
         return try toAny(value)
     }
     
@@ -106,14 +106,14 @@ public class TypeRule<T>: Rule {
     public init() {
     }
     
-    open func validate(_ jsonValue: AnyObject) throws -> T {
+    open func validate(_ jsonValue: Any) throws -> T {
         guard let value = jsonValue as? T else {
             throw RuleError.invalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected \(T.self).", nil)
         }
         return value
     }
     
-    open func dump(_ value: V) throws -> AnyObject {
+    open func dump(_ value: V) throws -> Any {
         return try toAny(value)
     }
 }

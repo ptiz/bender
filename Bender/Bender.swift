@@ -34,8 +34,8 @@ import Foundation
  */
 public protocol Rule {
     associatedtype V
-    func validate(_ jsonValue: AnyObject) throws -> V
-    func dump(_ value: V) throws -> AnyObject
+    func validate(_ jsonValue: Any) throws -> V
+    func dump(_ value: V) throws -> Any
 }
 
 // MARK: - Helpers

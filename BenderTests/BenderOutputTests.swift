@@ -210,14 +210,18 @@ class BenderOutTests: QuickSpec {
                     .expect("valid", BoolRule) { $0.valid }
                 
                 let pass = Passport(number: nil, issuedBy: "One", valid: false)
-                
-                let passJson = try! passportRule.dump(pass) as! [String: AnyObject]
-                expect(passJson["issuedBy"] as? String).to(equal("One"))
-                expect(passJson["number"] as? NSNull).toNot(beNil())
-            
-                let passString = try! StringifiedJSONRule(nestedRule: passportRule).dump(pass) as! String
-                
-                expect(passString).to(contain("\"number\":null"))
+                            
+                do {
+                    let passJson = try passportRule.dump(pass) as! [String: Any]
+                    expect(passJson["issuedBy"] as? String).to(equal("One"))
+                    expect(passJson["number"] as? NSNull).toNot(beNil())
+
+                    let passString = try StringifiedJSONRule(nestedRule: passportRule).dump(pass) as! String
+                    expect(passString).to(contain("\"number\":null"))
+                } catch {
+                    expect(error).to(beNil())
+                }
+
             }
             
             it("should be able to work with tuples") {
@@ -225,9 +229,13 @@ class BenderOutTests: QuickSpec {
                     .expect("name", StringRule) { $0.0 }
                     .expect("number", IntRule) { $0.1 }
                 
-                let str = try! StringifiedJSONRule(nestedRule: rule).dump(("Test13", 13)) as! String
-                expect(str).to(contain("\"number\":13"))
-                expect(str).to(contain("\"name\":\"Test13\""))
+                do {
+                    let str = try StringifiedJSONRule(nestedRule: rule).dump(("Test13", 13)) as! String
+                    expect(str).to(contain("\"number\":13"))
+                    expect(str).to(contain("\"name\":\"Test13\""))
+                } catch {
+                    expect(error).to(beNil())
+                }
             }
             
             it("should be able to dump value at JSON path") {
@@ -236,12 +244,16 @@ class BenderOutTests: QuickSpec {
                 let m = StructRule(ref(User(id: nil, name: nil)))
                     .expect("message"/"payload"/"createdBy"/"user"/"id", StringRule, { $0.value.id = $1 }) { $0.id }
                     .optional("message"/"payload"/"createdBy"/"user"/"login", StringRule) { $0.value.name = $1 }
+    
+                do {
+                    let data = try m.dump(userStruct)
+                    let user = try m.validate(data)
+                    expect(user).toNot(beNil())
+                    expect(user.id).to(equal(userStruct.id))
+                } catch {
+                    expect(error).to(beNil())
+                }
                 
-                let data = try? m.dump(userStruct) as! [String: AnyObject]
-                let user = try? m.validate(data as AnyObject)
-                
-                expect(user).toNot(beNil())
-                expect(user?.id).to(equal(userStruct.id))
             }
             
         }

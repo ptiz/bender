@@ -88,26 +88,26 @@ public struct JSONPath: ExpressibleByStringLiteral, ExpressibleByArrayLiteral, C
     }
 }
 
-public func getInDictionary(_ dict: NSDictionary, atPath path: String) -> AnyObject? {
-    if let value = dict.value(forKey: path) as AnyObject?, !(value is NSNull) {
+public func getInDictionary(_ dict: NSDictionary, atPath path: String) -> Any? {
+    if let value = dict.value(forKey: path) as Any?, !(value is NSNull) {
         return value
     }
     return nil
 }
 
-public func getInDictionary(_ dict: NSDictionary, atPath path: JSONPath) -> AnyObject? {
+public func getInDictionary(_ dict: NSDictionary, atPath path: JSONPath) -> Any? {
     if let key = path.singleString {
         return getInDictionary(dict, atPath: key)
     }
     
-    var currentObject: AnyObject? = dict as AnyObject
+    var currentObject: Any? = dict
     for pathItem in path.elements {
-        if let currentDict = currentObject as? NSDictionary, case .DictionaryKey(let item) = pathItem, let next = currentDict.value(forKey: item) as AnyObject?, !(next is NSNull) {
+        if let currentDict = currentObject as? NSDictionary, case .DictionaryKey(let item) = pathItem, let next = currentDict.value(forKey: item), !(next is NSNull) {
             currentObject = next
             continue
         }
         if let currentArray = currentObject as? NSArray, case .ArrayIndex(let index) = pathItem, currentArray.count > index && !(currentArray[index] is NSNull) {
-            currentObject = currentArray[index] as AnyObject?
+            currentObject = currentArray[index]
             continue
         }
         currentObject = nil
@@ -115,7 +115,7 @@ public func getInDictionary(_ dict: NSDictionary, atPath path: JSONPath) -> AnyO
     return currentObject
 }
 
-public func setInDictionary(_ dictionary: [String: AnyObject], object: AnyObject?, atPath path: JSONPath) throws -> [String: AnyObject] {
+public func setInDictionary(_ dictionary: [String: Any], object: Any?, atPath path: JSONPath) throws -> [String: Any] {
     guard let first = path.elements.first else {
         throw RuleError.invalidDump("Unexpectedly count of path elements is 0", nil)
     }
@@ -130,14 +130,14 @@ public func setInDictionary(_ dictionary: [String: AnyObject], object: AnyObject
     }
     
     if let nestedObject = traverseDictionary[pathElement] {
-        guard let existingDictionary = nestedObject as? [String: AnyObject] else {
+        guard let existingDictionary = nestedObject as? [String: Any] else {
             throw RuleError.invalidDump("\"\(pathElement)\" is not a dictionary.", nil)
         }
-        traverseDictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail()) as AnyObject?
+        traverseDictionary[pathElement] = try setInDictionary(existingDictionary, object: object, atPath: path.tail())
         return traverseDictionary
     }
     
-    traverseDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail()) as AnyObject?
+    traverseDictionary[pathElement] = try setInDictionary([:], object: object, atPath: path.tail())
     return traverseDictionary
 }
 

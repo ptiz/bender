@@ -55,14 +55,14 @@ open class StringifiedJSONRule<R: Rule>: Rule {
      
      - returns: returns object of nested rule struct type (i.e. R.V), if validated. Throws otherwise.
      */
-    open func validate(_ jsonValue: AnyObject) throws -> V {
+    open func validate(_ jsonValue: Any) throws -> V {
         guard let jsonString = jsonValue as? String, let data = jsonString.data(using: String.Encoding.utf8) else {
             throw RuleError.invalidJSONType("Value of unexpected type found: \"\(jsonValue)\". Expected stringified JSON.", nil)
         }
         
         do {
             let json = try JSONSerialization.jsonObject(with: data, options: .allowFragments)
-            return try nestedRule.validate(json as AnyObject)
+            return try nestedRule.validate(json)
         } catch let error as NSError {
             throw RuleError.invalidJSONSerialization("Unable to parse stringified JSON: \(jsonString).", error)
         }
@@ -77,14 +77,14 @@ open class StringifiedJSONRule<R: Rule>: Rule {
      
      - returns: string with JSON encoded in UTF-8
      */
-    open func dump(_ value: V) throws -> AnyObject {
+    open func dump(_ value: V) throws -> Any {
         do {
             let json = try nestedRule.dump(value)
             let data = try JSONSerialization.data(withJSONObject: json, options: JSONSerialization.WritingOptions(rawValue: 0))
             guard let string = String(data: data, encoding: String.Encoding.utf8) else {
                 throw RuleError.invalidDump("Unable to dump stringified JSON: \(json). Could not convert JSON to string.", nil)
             }
-            return string as AnyObject
+            return string
         } catch let error as NSError {
             let cause = RuleError.invalidJSONSerialization("Could not convert object to JSON: \(value).", error)
             throw RuleError.invalidDump("Unable to dump stringified JSON.", cause)
